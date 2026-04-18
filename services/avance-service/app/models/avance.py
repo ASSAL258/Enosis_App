@@ -21,25 +21,29 @@ class Avance(models.Model):
         db_index=True, 
         help_text="The UUID of the feedback from the Feedback microservice"
     )
-    feedback_manager_id = models.UUIDField(
-        null=True,
-        blank=True,
-        db_index=True, 
-        help_text="The UUID of the feedback from the Feedback microservice"
-    )
+    # feedback_manager_id = models.UUIDField(
+    #     null=True,
+    #     blank=True,
+    #     db_index=True, 
+    #     help_text="The UUID of the feedback from the Feedback microservice"
+    # )
+   
     
     # motif : str
     motif = models.CharField(max_length=255)
     
     # date 
-    date = models.DateField(auto_now_add=True)
+
     
     # montante : float (using Decimal for financial precision)
     montante = models.DecimalField(max_digits=10, decimal_places=2)
     
     # durée_de_remboursement
-    duree_de_remboursement = models.PositiveIntegerField(
-        help_text="Duration in months"
+    duree_de_remboursement = models.Choices(
+       IntegerChoices(
+            (1, "1 mois"), 
+            (2, "2 mois")
+       )
     )
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):

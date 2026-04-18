@@ -14,3 +14,6 @@ class AvanceRepository:
         avance.feedback_rh_id = feedback_id
         avance.save(update_fields=["feedback_rh_id"])
         return avance
+    def create_avance(self, avance: Avance):
+        avance.save()
+        return avance   

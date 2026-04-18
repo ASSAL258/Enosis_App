@@ -1,5 +1,5 @@
 from repositories.avance_repository import AvanceRepository
-
+from models.avance import Avance
 
 class AvanceService:
     def __init__(self):
@@ -17,3 +17,11 @@ class AvanceService:
             return self.avance_repository.set_feedback_rh(avance, feedback_id=feedback_id)
 
         raise ValueError(f"Unsupported role: {user_role}")
+    def craete_avance(self, data  ) :
+        avance = Avance(
+            motif=data["motif"],
+            montante=data["montante"],
+            duree_de_remboursement=data["duree_de_remboursement"],
+        )
+        avance_saved = self.avance_repository.create_avance(avance)
+        return avance 

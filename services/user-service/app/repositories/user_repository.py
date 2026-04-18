@@ -7,5 +7,5 @@ class UserRepository:
         return list(User.objects.all().order_by("-created_at"))
 
     @staticmethod
-    def create_user(*, email: str, first_name: str, last_name: str) -> User:
-        return User.objects.create(email=email, first_name=first_name, last_name=last_name)
+    def create_user(**kwargs) -> User:
+        return User.objects.create(**kwargs)

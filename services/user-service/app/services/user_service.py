@@ -1,3 +1,5 @@
+from django.contrib.auth.hashers import make_password
+
 from app.repositories import UserRepository
 
 
@@ -8,8 +10,6 @@ class UserService:
 
     @staticmethod
     def create_user(validated_data: dict):
-        return UserRepository.create_user(
-            email=validated_data["email"],
-            first_name=validated_data["first_name"],
-            last_name=validated_data["last_name"],
-        )
+        user_data = dict(validated_data)
+        user_data["password"] = make_password(validated_data["password"])
+        return UserRepository.create_user(**user_data)
