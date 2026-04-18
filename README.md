@@ -2,6 +2,17 @@
 
 Dockerized Django application scaffold.
 
+## Microservices Folder Structure
+
+This repository now includes a microservices-ready layout under `services/`.
+
+- `services/api-gateway/`
+- `services/auth-service/`
+- `services/user-service/`
+- `infra/`
+- `shared/`
+- `scripts/`
+
 ## Run the app
 
 1. Build and start the container:

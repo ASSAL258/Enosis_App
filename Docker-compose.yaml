@@ -11,3 +11,71 @@ services:
 			- "8000:8000"
 		restart: unless-stopped
 
+	config-service:
+		build:
+			context: ./services/config-service
+		container_name: enosis_config_service
+		ports:
+			- "5000:5000"
+		restart: unless-stopped
+
+	discovery-service:
+		image: hashicorp/consul:1.20
+		container_name: enosis_discovery_service
+		command: agent -config-file=/consul/config/consul.hcl
+		volumes:
+			- ./infra/discovery/consul.hcl:/consul/config/consul.hcl:ro
+		ports:
+			- "8500:8500"
+			- "8600:8600/udp"
+		restart: unless-stopped
+
+	service-registrator:
+		image: gliderlabs/registrator:latest
+		container_name: enosis_service_registrator
+		command: -internal consul://discovery-service:8500
+		volumes:
+			- /var/run/docker.sock:/tmp/docker.sock
+		depends_on:
+			- discovery-service
+		restart: unless-stopped
+
+	api-gateway:
+		build:
+			context: .
+			dockerfile: services/api-gateway/Dockerfile
+		container_name: enosis_api_gateway
+		ports:
+			- "8080:80"
+		depends_on:
+			- discovery-service
+			- config-service
+			- web
+		restart: unless-stopped
+
+	rabbitmq:
+		image: rabbitmq:3.13-management
+		container_name: enosis_rabbitmq
+		environment:
+			RABBITMQ_DEFAULT_USER: guest
+			RABBITMQ_DEFAULT_PASS: guest
+		ports:
+			- "5672:5672"
+			- "15672:15672"
+		restart: unless-stopped
+
+	avance-feedback-consumer:
+		build:
+			context: ./services/avance-service
+		container_name: enosis_avance_feedback_consumer
+		command: sh -c "python services/feedback_created_consumer.py"
+		environment:
+			RABBITMQ_HOST: rabbitmq
+			RABBITMQ_PORT: 5672
+			RABBITMQ_USER: guest
+			RABBITMQ_PASS: guest
+			FEEDBACK_CREATED_QUEUE: feedback.created
+		depends_on:
+			- rabbitmq
+		restart: unless-stopped
+
