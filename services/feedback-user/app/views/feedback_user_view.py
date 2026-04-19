@@ -57,7 +57,9 @@ class FeedbackUserViewSet(ViewSet):
             self.feedback_user_service.publish_feedback_created_event(
                 feedback=feedback,
                 user_role=serializer.validated_data["user_role"],
-                avance_id=serializer.validated_data["avance_id"],
+                avance_id=serializer.validated_data.get("avance_id"),
+                conge_id=serializer.validated_data.get("conge_id"),
+                pret_id=serializer.validated_data.get("pret_id"),
             )
             return Response({"detail": "feedback.created published."}, status=status.HTTP_202_ACCEPTED)
         except FeedbackNotFoundException as exc:

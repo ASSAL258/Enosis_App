@@ -17,9 +17,10 @@ class FeedbackEventPublisher:
         *,
         feedback_id: str,
         user_role: str,
-        avance_id: str,
+        avance_id: str | None,
         user_id: str,
         conge_id: str | None = None,
+        pret_id: str | None = None,
     ) -> None:
         credentials = pika.PlainCredentials(self.username, self.password)
         parameters = pika.ConnectionParameters(
@@ -36,11 +37,14 @@ class FeedbackEventPublisher:
                 "event": "feedback.created",
                 "feedback_id": feedback_id,
                 "user_role": user_role,
-                "avance_id": avance_id,
                 "user_id": user_id,
             }
+            if avance_id:
+                payload["avance_id"] = avance_id
             if conge_id:
                 payload["conge_id"] = conge_id
+            if pret_id:
+                payload["pret_id"] = pret_id
             channel.basic_publish(
                 exchange="",
                 routing_key=self.queue,

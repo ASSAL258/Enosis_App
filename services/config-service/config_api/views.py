@@ -61,6 +61,9 @@ class ConfigViewSet(ViewSet):
                         "soldes-service": {
                             "base_url": os.getenv("SOLDES_SERVICE_URL", "http://soldes-service:5009")
                         },
+                        "pret-service": {
+                            "base_url": os.getenv("PRET_SERVICE_URL", "http://pret-service:5010")
+                        },
                     }
                 }
             )

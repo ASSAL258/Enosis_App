@@ -11,4 +11,5 @@ SERVICE_ROUTES = {
     "/api/delivered-times": "http://courier-time-service:5007/delivered-times/",
     "/api/conges": "http://conge-service:5008/conges/",
     "/api/soldes": "http://soldes-service:5009/soldes/",
+    "/api/prets": "http://pret-service:5010/prets/",
 }

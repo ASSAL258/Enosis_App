@@ -23,16 +23,20 @@ class FeedbackUserService:
         self.publish_feedback_created_event(
             feedback=feedback,
             user_role=validated_data["user_role"],
-            avance_id=validated_data["avance_id"],
+            avance_id=validated_data.get("avance_id"),
+            conge_id=validated_data.get("conge_id"),
+            pret_id=validated_data.get("pret_id"),
         )
         return feedback
 
-    def publish_feedback_created_event(self, *, feedback, user_role: str, avance_id):
+    def publish_feedback_created_event(self, *, feedback, user_role: str, avance_id=None, conge_id=None, pret_id=None):
         self.feedback_event_publisher.publish_feedback_created(
             feedback_id=str(feedback.id),
             user_role=user_role,
-            avance_id=str(avance_id),
+            avance_id=str(avance_id) if avance_id else None,
             user_id=str(feedback.userid),
+            conge_id=str(conge_id) if conge_id else None,
+            pret_id=str(pret_id) if pret_id else None,
         )
 
     def update_feedback(self, feedback, validated_data: dict):

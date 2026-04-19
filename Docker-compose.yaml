@@ -145,6 +145,7 @@ services:
       COURIER_TIME_SERVICE_URL: http://courier-time-service:5007
       CONGE_SERVICE_URL: http://conge-service:5008
       SOLDES_SERVICE_URL: http://soldes-service:5009
+      PRET_SERVICE_URL: http://pret-service:5010
     depends_on:
       config-service-db:
         condition: service_healthy
@@ -357,6 +358,24 @@ services:
       retries: 5
     restart: unless-stopped
 
+  pret-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_pret_service_db
+    environment:
+      POSTGRES_DB: pret_service_db
+      POSTGRES_USER: pret_service
+      POSTGRES_PASSWORD: pret_service
+    volumes:
+      - pret-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5443:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pret_service -d pret_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   departement-service:
     build:
       context: ./services/departement-service
@@ -556,6 +575,57 @@ services:
       - "5009:5009"
     restart: unless-stopped
 
+  pret-service:
+    build:
+      context: ./services/pret-service
+    container_name: enosis_pret_service
+    environment:
+      POSTGRES_DB: pret_service_db
+      POSTGRES_USER: pret_service
+      POSTGRES_PASSWORD: pret_service
+      POSTGRES_HOST: pret-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      FEEDBACK_CREATED_QUEUE: feedback.created
+    depends_on:
+      pret-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      default:
+        aliases:
+          - pret-service
+    ports:
+      - "5010:5010"
+    restart: unless-stopped
+
+  pret-feedback-consumer:
+    build:
+      context: ./services/pret-service
+    container_name: enosis_pret_feedback_consumer
+    command: sh -c "python -m app.services.feedback_created_consumer"
+    environment:
+      POSTGRES_DB: pret_service_db
+      POSTGRES_USER: pret_service
+      POSTGRES_PASSWORD: pret_service
+      POSTGRES_HOST: pret-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      FEEDBACK_CREATED_QUEUE: feedback.created
+    depends_on:
+      pret-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: .
@@ -576,6 +646,7 @@ services:
       - courier-time-service
       - conge-service
       - soldes-service
+      - pret-service
     restart: unless-stopped
 
   rabbitmq:
@@ -601,4 +672,5 @@ volumes:
   courier-time-service-db-data:
   conge-service-db-data:
   soldes-service-db-data:
+  pret-service-db-data:
 
