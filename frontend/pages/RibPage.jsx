@@ -17,7 +17,6 @@ import DataTable from '../organisms/DataTable.jsx'
 import ProcessOverview from '../organisms/ProcessOverview.jsx'
 import FormTemplate from '../templates/FormTemplate.jsx'
 
-const SITE_OPTIONS = ['Casablanca', 'Jorf Lasfar']
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente' },
   { value: 'valide', label: 'Validee' },
@@ -29,12 +28,12 @@ const STATUS_META = {
   rejete: { label: 'Rejetee', tone: 'danger' },
 }
 
-function createInitialForm(user) {
+function createInitialForm(user, selectedUser = 'pour_moi') {
+  const isForOther = selectedUser === 'pour_autre'
   return {
-    nom: user.last,
-    prenom: user.first,
-    matricule: user.matricule || '',
-    site: user.site || '',
+    nom: isForOther ? '' : user.last,
+    prenom: isForOther ? '' : user.first,
+    matricule: isForOther ? '' : (user.matricule || ''),
     nom_banque: '',
     nouvel_iban: '',
     code_bic: '',
@@ -59,7 +58,8 @@ export default function RibPage({ user, isValidationView = false }) {
   const isRH = user.role === 'rh' && isValidationView
   const [demandes, setDemandes] = useState([])
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState(createInitialForm(user))
+  const [selectedUser, setSelectedUser] = useState('pour_moi')
+  const [form, setForm] = useState(createInitialForm(user, selectedUser))
   const [files, setFiles] = useState({ attestation_rib: null, main_levee: null })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -84,6 +84,12 @@ export default function RibPage({ user, isValidationView = false }) {
   useEffect(() => {
     fetchDemandes()
   }, [user.token, isValidationView])
+
+  useEffect(() => {
+    if (showModal) {
+      setForm(createInitialForm(user, selectedUser))
+    }
+  }, [selectedUser, showModal])
 
   const metrics = useMemo(() => ([
     { label: 'Total demandes', value: demandes.length, tone: 'blue' },
@@ -114,7 +120,8 @@ export default function RibPage({ user, isValidationView = false }) {
   }
 
   function openModal() {
-    setForm(createInitialForm(user))
+    setSelectedUser('pour_moi')
+    setForm(createInitialForm(user, 'pour_moi'))
     setFiles({ attestation_rib: null, main_levee: null })
     setError('')
     setShowModal(true)
@@ -204,6 +211,7 @@ export default function RibPage({ user, isValidationView = false }) {
           ...form,
           attestation_rib_file_id: attestationRibFileId,
           main_levee_file_id: mainLeveeFileId,
+          user_email: user.email,
         }),
       })
 
@@ -218,7 +226,7 @@ export default function RibPage({ user, isValidationView = false }) {
       }
 
       setShowModal(false)
-      setForm(createInitialForm(user))
+      setForm(createInitialForm(user, 'pour_moi'))
       setFiles({ attestation_rib: null, main_levee: null })
       fetchDemandes()
     } catch {
@@ -228,8 +236,8 @@ export default function RibPage({ user, isValidationView = false }) {
   }
 
   const headers = isRH
-    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Site', 'Banque', 'IBAN', 'BIC', 'Motif', 'Attestation', 'Main levee', 'Statut', 'Commentaire', 'Date']
-    : ['Nom', 'Prenom', 'Matricule', 'Site de rattachement', 'Banque', 'IBAN', 'BIC', 'Motif', 'Attestation RIB', 'Main levee', 'Statut', 'Commentaire RH', 'Date']
+    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Banque', 'IBAN', 'BIC', 'Motif', 'Attestation', 'Main levee', 'Statut Rh', 'Commentaires Rh', 'Date']
+    : ['Nom', 'Prenom', 'Matricule', 'Banque', 'IBAN', 'BIC', 'Motif', 'Attestation RIB', 'Main levee', 'Statut Rh', 'Commentaires Rh', 'Date']
 
   const rows = demandes.map((item) => ({
     key: item.id,
@@ -237,14 +245,13 @@ export default function RibPage({ user, isValidationView = false }) {
     cells: isRH
       ? [
         { content: <span className="cell-email">{item.userEmail || '—'}</span> },
-        { content: <span className="cell-strong">{item.nom}</span> },
-        { content: item.prenom },
-        { content: <span className="cell-muted">{item.matricule}</span> },
-        { content: item.site },
-        { content: item.nom_banque },
-        { content: item.nouvel_iban },
-        { content: item.code_bic },
-        { content: item.motif },
+        { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+        { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+        { content: <span className="cell-muted">{item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span>}</span> },
+        { content: item.nom_banque || <span className="comment-editor__placeholder">Saisissez une banque...</span> },
+        { content: item.nouvel_iban || <span className="comment-editor__placeholder">Saisissez un IBAN...</span> },
+        { content: item.code_bic || <span className="comment-editor__placeholder">Saisissez un BIC...</span> },
+        { content: item.motif || <span className="comment-editor__placeholder">Saisissez un motif...</span> },
         { content: <ActionLink disabled={!item.attestation_rib_file_id} loading={!!resourceLoading[item.attestation_rib_file_id]} onClick={() => openResource(item.attestation_rib_file_id)} label="PDF" disabledLabel="Non fourni" iconName="pdf" /> },
         { content: <ActionLink disabled={!item.main_levee_file_id} loading={!!resourceLoading[item.main_levee_file_id]} onClick={() => openResource(item.main_levee_file_id)} label="PDF" disabledLabel="Non fourni" iconName="pdf" /> },
         { content: <StatusSelect value={item.statut} options={STATUS_OPTIONS} toneByValue={getStatusTone} onChange={(value) => updateRequest(item.id, { statut: value })} /> },
@@ -252,14 +259,13 @@ export default function RibPage({ user, isValidationView = false }) {
         { content: <span className="cell-muted">{formatDate(item.date)}</span> },
       ]
       : [
-        { content: <span className="cell-strong">{item.nom}</span> },
-        { content: item.prenom },
-        { content: <span className="cell-muted">{item.matricule}</span> },
-        { content: item.site },
-        { content: item.nom_banque },
-        { content: item.nouvel_iban },
-        { content: item.code_bic },
-        { content: item.motif },
+        { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+        { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+        { content: <span className="cell-muted">{item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span>}</span> },
+        { content: item.nom_banque || <span className="comment-editor__placeholder">Saisissez une banque...</span> },
+        { content: item.nouvel_iban || <span className="comment-editor__placeholder">Saisissez un IBAN...</span> },
+        { content: item.code_bic || <span className="comment-editor__placeholder">Saisissez un BIC...</span> },
+        { content: item.motif || <span className="comment-editor__placeholder">Saisissez un motif...</span> },
         { content: <ActionLink disabled={!item.attestation_rib_file_id} loading={!!resourceLoading[item.attestation_rib_file_id]} onClick={() => openResource(item.attestation_rib_file_id)} label="PDF" disabledLabel="Non fourni" iconName="pdf" /> },
         { content: <ActionLink disabled={!item.main_levee_file_id} loading={!!resourceLoading[item.main_levee_file_id]} onClick={() => openResource(item.main_levee_file_id)} label="PDF" disabledLabel="Non fourni" iconName="pdf" /> },
         { content: renderStatusBadge(item.statut) },
@@ -296,6 +302,12 @@ export default function RibPage({ user, isValidationView = false }) {
       {showModal ? (
         <FormTemplate
           title="Demande Changement de RIB"
+          headerControl={
+            <Select value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)} style={{ width: '200px' }}>
+              <option value="pour_moi">Pour moi</option>
+              <option value="pour_autre">Pour une autre personne</option>
+            </Select>
+          }
           onClose={() => setShowModal(false)}
           footer={(
             <>
@@ -311,50 +323,31 @@ export default function RibPage({ user, isValidationView = false }) {
           <AlertMessage message={error} />
 
           <FormRow>
-            <FormGroup label="Nom">
-              <Input value={form.nom} readOnly />
+            <FormGroup label="Nom" required>
+              <Input value={form.nom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, nom: event.target.value }))} />
             </FormGroup>
-            <FormGroup label="Prenom">
-              <Input value={form.prenom} readOnly />
+            <FormGroup label="Prenom" required>
+              <Input value={form.prenom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, prenom: event.target.value }))} />
             </FormGroup>
           </FormRow>
 
           <FormRow>
             <FormGroup label="Matricule" required>
-              <Input value={form.matricule} onChange={(event) => setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
+              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
             </FormGroup>
-            <FormGroup label="Site de rattachement" required>
-              <Select value={form.site} onChange={(event) => setForm((current) => ({ ...current, site: event.target.value }))}>
-                <option value="">Selectionner un site</option>
-                {SITE_OPTIONS.map((site) => (
-                  <option key={site} value={site}>
-                    {site}
-                  </option>
-                ))}
-              </Select>
-            </FormGroup>
-          </FormRow>
-
-          <SectionDivider title="Nouvelles coordonnees bancaires" />
-
-          <FormRow>
             <FormGroup label="Nom Banque" required>
               <Input value={form.nom_banque} onChange={(event) => setForm((current) => ({ ...current, nom_banque: event.target.value }))} />
             </FormGroup>
+          </FormRow>
+
+          <FormRow>
             <FormGroup label="Code BIC" required>
               <Input value={form.code_bic} onChange={(event) => setForm((current) => ({ ...current, code_bic: event.target.value }))} />
             </FormGroup>
+            <FormGroup label="Nouvel IBAN" required>
+              <Input value={form.nouvel_iban} onChange={(event) => setForm((current) => ({ ...current, nouvel_iban: event.target.value }))} />
+            </FormGroup>
           </FormRow>
-
-          <FormGroup label="Nouvel IBAN" required>
-            <Input value={form.nouvel_iban} onChange={(event) => setForm((current) => ({ ...current, nouvel_iban: event.target.value }))} />
-          </FormGroup>
-
-          <FormGroup label="Motif">
-            <Textarea value={form.motif} onChange={(event) => setForm((current) => ({ ...current, motif: event.target.value }))} />
-          </FormGroup>
-
-          <SectionDivider title="Pieces jointes (PDF, Max 10 Mo)" />
 
           <FormRow>
             <FormGroup label="Attestation de RIB" required>
@@ -367,6 +360,10 @@ export default function RibPage({ user, isValidationView = false }) {
 
           {files.attestation_rib ? <span className="field-hint">Attestation: {files.attestation_rib[0]?.name}</span> : null}
           {files.main_levee ? <span className="field-hint">Main levee: {files.main_levee[0]?.name}</span> : null}
+
+          <FormGroup label="Motif">
+            <Textarea value={form.motif} onChange={(event) => setForm((current) => ({ ...current, motif: event.target.value }))} placeholder="Saisissez un motif..." />
+          </FormGroup>
         </FormTemplate>
       ) : null}
     </>

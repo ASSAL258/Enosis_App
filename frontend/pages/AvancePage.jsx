@@ -15,7 +15,6 @@ import DataTable from '../organisms/DataTable.jsx'
 import ProcessOverview from '../organisms/ProcessOverview.jsx'
 import FormTemplate from '../templates/FormTemplate.jsx'
 
-const SITE_OPTIONS = ['Casablanca', 'Jorf Lasfar']
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente' },
   { value: 'valide', label: 'Validee' },
@@ -27,12 +26,12 @@ const STATUS_META = {
   rejete: { label: 'Rejetee', tone: 'danger' },
 }
 
-function createInitialForm(user) {
+function createInitialForm(user, selectedUser = 'pour_moi') {
+  const isForOther = selectedUser === 'pour_autre'
   return {
-    nom: user.last,
-    prenom: user.first,
-    matricule: user.matricule || '',
-    site: user.site || '',
+    nom: isForOther ? '' : user.last,
+    prenom: isForOther ? '' : user.first,
+    matricule: isForOther ? '' : (user.matricule || ''),
     montant: '',
     duree: '1',
     motif: '',
@@ -60,7 +59,8 @@ export default function AvancePage({ user, isValidationView = false }) {
   const isRH = user.role === 'rh' && isValidationView
   const [demandes, setDemandes] = useState([])
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState(createInitialForm(user))
+  const [selectedUser, setSelectedUser] = useState('pour_moi')
+  const [form, setForm] = useState(createInitialForm(user, selectedUser))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -84,6 +84,12 @@ export default function AvancePage({ user, isValidationView = false }) {
     fetchDemandes()
   }, [user.token, isValidationView])
 
+  useEffect(() => {
+    if (showModal) {
+      setForm(createInitialForm(user, selectedUser))
+    }
+  }, [selectedUser, showModal])
+
   const metrics = useMemo(() => ([
     { label: 'Total demandes', value: demandes.length, tone: 'blue' },
     { label: 'En attente', value: demandes.filter((item) => item.statut === 'en_attente').length, tone: 'orange' },
@@ -104,7 +110,8 @@ export default function AvancePage({ user, isValidationView = false }) {
   }
 
   function openModal() {
-    setForm(createInitialForm(user))
+    setSelectedUser('pour_moi')
+    setForm(createInitialForm(user, 'pour_moi'))
     setError('')
     setShowModal(true)
   }
@@ -130,6 +137,7 @@ export default function AvancePage({ user, isValidationView = false }) {
           ...form,
           montant: Number(form.montant),
           duree: Number(form.duree),
+          user_email: user.email,
         }),
       })
 
@@ -150,8 +158,8 @@ export default function AvancePage({ user, isValidationView = false }) {
   }
 
   const headers = isRH
-    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Site', 'Montant', 'Duree', 'Motif', 'Statut', 'Commentaire', 'Date']
-    : ['Nom', 'Prenom', 'Matricule', 'Site de rattachement', 'Montant', 'Duree de remboursement', 'Motif', 'Statut', 'Commentaire', 'Date']
+    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Montant demande', 'Duree', 'Motif', 'Statut Rh', 'Commentaires Rh', 'Date']
+    : ['Nom', 'Prenom', 'Matricule', 'Montant demande', 'Duree de remboursement', 'Motif', 'Statut Rh', 'Commentaires Rh', 'Date']
 
   const rows = demandes.map((item) => ({
     key: item.id,
@@ -159,13 +167,12 @@ export default function AvancePage({ user, isValidationView = false }) {
     cells: isRH
       ? [
           { content: <span className="cell-email">{item.userEmail || '—'}</span> },
-          { content: <span className="cell-strong">{item.nom}</span> },
-          { content: item.prenom },
-          { content: <span className="cell-muted">{item.matricule}</span> },
-          { content: item.site },
-          { content: <span className="cell-money">{formatCurrency(item.montant)}</span> },
+          { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+          { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+          { content: <span className="cell-muted">{item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span>}</span> },
+          { content: <span className="cell-money">{item.montant ? formatCurrency(item.montant) : <span className="comment-editor__placeholder">Saisissez un montant...</span>}</span> },
           { content: `${item.duree} mois` },
-          { content: item.motif },
+          { content: item.motif ? item.motif : <span className="comment-editor__placeholder">Saisissez un motif...</span> },
           {
             content: (
               <StatusSelect
@@ -187,13 +194,12 @@ export default function AvancePage({ user, isValidationView = false }) {
           { content: <span className="cell-muted">{formatDate(item.date)}</span> },
         ]
       : [
-          { content: <span className="cell-strong">{item.nom}</span> },
-          { content: item.prenom },
-          { content: <span className="cell-muted">{item.matricule}</span> },
-          { content: item.site },
-          { content: <span className="cell-money">{formatCurrency(item.montant)}</span> },
+          { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+          { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+          { content: <span className="cell-muted">{item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span>}</span> },
+          { content: <span className="cell-money">{item.montant ? formatCurrency(item.montant) : <span className="comment-editor__placeholder">Saisissez un montant...</span>}</span> },
           { content: `${item.duree} mois` },
-          { content: item.motif },
+          { content: item.motif ? item.motif : <span className="comment-editor__placeholder">Saisissez un motif...</span> },
           { content: renderStatusBadge(item.statut) },
           { content: item.commentaire ? <span className="cell-note">{item.commentaire}</span> : <span className="comment-editor__placeholder">—</span> },
           { content: <span className="cell-muted">{formatDate(item.date)}</span> },
@@ -230,6 +236,12 @@ export default function AvancePage({ user, isValidationView = false }) {
       {showModal ? (
         <FormTemplate
           title="Demande d'Avance sur Salaire"
+          headerControl={
+            <Select value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)} style={{ width: '200px' }}>
+              <option value="pour_moi">Pour moi</option>
+              <option value="pour_autre">Pour une autre personne</option>
+            </Select>
+          }
           onClose={() => setShowModal(false)}
           footer={(
             <>
@@ -245,34 +257,24 @@ export default function AvancePage({ user, isValidationView = false }) {
           <AlertMessage message={error} />
 
           <FormRow>
-            <FormGroup label="Nom">
-              <Input value={form.nom} readOnly />
+            <FormGroup label="Nom" required>
+              <Input value={form.nom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, nom: event.target.value }))} />
             </FormGroup>
-            <FormGroup label="Prenom">
-              <Input value={form.prenom} readOnly />
+            <FormGroup label="Prenom" required>
+              <Input value={form.prenom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, prenom: event.target.value }))} />
             </FormGroup>
           </FormRow>
 
           <FormRow>
             <FormGroup label="Matricule" required>
-              <Input value={form.matricule} onChange={(event) => setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
+              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
             </FormGroup>
-            <FormGroup label="Site de rattachement" required>
-              <Select value={form.site} onChange={(event) => setForm((current) => ({ ...current, site: event.target.value }))}>
-                <option value="">Selectionner un site</option>
-                {SITE_OPTIONS.map((site) => (
-                  <option key={site} value={site}>
-                    {site}
-                  </option>
-                ))}
-              </Select>
+            <FormGroup label="Montant demande (DH)" required>
+              <Input type="number" min="0" value={form.montant} onChange={(event) => setForm((current) => ({ ...current, montant: event.target.value }))} />
             </FormGroup>
           </FormRow>
 
           <FormRow>
-            <FormGroup label="Montant demande (DH)" required>
-              <Input type="number" min="0" value={form.montant} onChange={(event) => setForm((current) => ({ ...current, montant: event.target.value }))} />
-            </FormGroup>
             <FormGroup label="Duree de remboursement" required>
               <Select value={form.duree} onChange={(event) => setForm((current) => ({ ...current, duree: event.target.value }))}>
                 <option value="1">1 mois</option>
@@ -282,7 +284,7 @@ export default function AvancePage({ user, isValidationView = false }) {
           </FormRow>
 
           <FormGroup label="Motif">
-            <Textarea value={form.motif} onChange={(event) => setForm((current) => ({ ...current, motif: event.target.value }))} />
+            <Textarea value={form.motif} onChange={(event) => setForm((current) => ({ ...current, motif: event.target.value }))} placeholder="Saisissez un motif..." />
           </FormGroup>
         </FormTemplate>
       ) : null}

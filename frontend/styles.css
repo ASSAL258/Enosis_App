@@ -23,6 +23,17 @@ textarea {
   font: inherit;
 }
 
+/* Remove number input spinner */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 button {
   background: none;
 }
@@ -1142,6 +1153,13 @@ a {
   gap: var(--space-sm);
   font-size: var(--font-size-title-sm);
   font-weight: var(--font-weight-bold);
+}
+
+.modal__header-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-left: auto;
 }
 
 .modal__body {

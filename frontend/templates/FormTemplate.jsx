@@ -3,17 +3,19 @@ import Icon from '../atoms/Icon.jsx'
 /**
  * FormTemplate — template structurel de formulaire en modale.
  * Props:
- *   title      : titre affiche
- *   footer     : zone de footer injectee par la page
- *   children   : contenu du formulaire
- *   onClose    : callback fermeture
+ *   title         : titre affiche
+ *   footer        : zone de footer injectee par la page
+ *   headerControl : controle/element affiche dans le header (optionnel)
+ *   children      : contenu du formulaire
+ *   onClose       : callback fermeture
  */
-export default function FormTemplate({ title, footer = null, children, onClose }) {
+export default function FormTemplate({ title, footer = null, headerControl = null, children, onClose }) {
   return (
     <div className="modal-overlay">
       <div className="modal">
         <div className="modal__header">
           <h2 className="modal__title">{title}</h2>
+          {headerControl ? <div className="modal__header-control">{headerControl}</div> : null}
           <button type="button" className="icon-button" onClick={onClose} aria-label="Fermer">
             <Icon name="close" />
           </button>

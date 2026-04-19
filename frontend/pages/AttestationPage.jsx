@@ -15,7 +15,6 @@ import DataTable from '../organisms/DataTable.jsx'
 import ProcessOverview from '../organisms/ProcessOverview.jsx'
 import FormTemplate from '../templates/FormTemplate.jsx'
 
-const SITE_OPTIONS = ['Casablanca', 'Jorf Lasfar']
 const COMPANY_OPTIONS = ['AMA Papillon', 'AMA Detergent', 'Sulfonation', 'FMCG Maroc']
 const REQUEST_TYPES = ['Attestation de Travail', 'Attestation de Salaire', 'Attestation domiciliation de salaire']
 const STATUS_OPTIONS = [
@@ -29,12 +28,12 @@ const STATUS_META = {
   rejete: { label: 'Rejetee', tone: 'danger' },
 }
 
-function createInitialForm(user) {
+function createInitialForm(user, selectedUser = 'pour_moi') {
+  const isForOther = selectedUser === 'pour_autre'
   return {
-    nom: user.last,
-    prenom: user.first,
-    matricule: user.matricule || '',
-    site: user.site || '',
+    nom: isForOther ? '' : user.last,
+    prenom: isForOther ? '' : user.first,
+    matricule: isForOther ? '' : (user.matricule || ''),
     societe: COMPANY_OPTIONS[0],
     type_demande: REQUEST_TYPES[0],
     motif: '',
@@ -58,7 +57,8 @@ export default function AttestationPage({ user, isValidationView = false }) {
   const isRH = user.role === 'rh' && isValidationView
   const [attestations, setAttestations] = useState([])
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState(createInitialForm(user))
+  const [selectedUser, setSelectedUser] = useState('pour_moi')
+  const [form, setForm] = useState(createInitialForm(user, selectedUser))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -78,6 +78,12 @@ export default function AttestationPage({ user, isValidationView = false }) {
   useEffect(() => {
     fetchAttestations()
   }, [user.token, isValidationView])
+
+  useEffect(() => {
+    if (showModal) {
+      setForm(createInitialForm(user, selectedUser))
+    }
+  }, [selectedUser, showModal])
 
   const metrics = useMemo(() => ([
     { label: 'Total demandes', value: attestations.length, tone: 'blue' },
@@ -99,7 +105,8 @@ export default function AttestationPage({ user, isValidationView = false }) {
   }
 
   function openModal() {
-    setForm(createInitialForm(user))
+    setSelectedUser('pour_moi')
+    setForm(createInitialForm(user, 'pour_moi'))
     setError('')
     setShowModal(true)
   }
@@ -114,7 +121,7 @@ export default function AttestationPage({ user, isValidationView = false }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, user_email: user.email }),
       })
 
       if (!response.ok) {
@@ -132,8 +139,8 @@ export default function AttestationPage({ user, isValidationView = false }) {
   }
 
   const headers = isRH
-    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Site', 'Societe', 'Type', 'Motif', 'Statut', 'Commentaire', 'Date']
-    : ['Nom', 'Prenom', 'Matricule', 'Site', 'Societe', 'Type', 'Motif', 'Statut', 'Commentaire RH', 'Date']
+    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Societe', 'Type', 'Motif', 'Statut Rh', 'Commentaires Rh', 'Date']
+    : ['Nom', 'Prenom', 'Matricule', 'Societe', 'Type', 'Motif', 'Statut Rh', 'Commentaires Rh', 'Date']
 
   const rows = attestations.map((item) => ({
     key: item.id,
@@ -141,25 +148,23 @@ export default function AttestationPage({ user, isValidationView = false }) {
     cells: isRH
       ? [
           { content: <span className="cell-email">{item.userEmail || '—'}</span> },
-          { content: <span className="cell-strong">{item.nom}</span> },
-          { content: item.prenom },
-          { content: <span className="cell-muted">{item.matricule}</span> },
-          { content: item.site },
+          { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+          { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+          { content: <span className="cell-muted">{item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span>}</span> },
           { content: item.societe },
           { content: item.type_demande },
-          { content: item.motif },
+          { content: item.motif ? item.motif : <span className="comment-editor__placeholder">Saisissez un motif...</span> },
           { content: <StatusSelect value={item.statut} options={STATUS_OPTIONS} toneByValue={getStatusTone} onChange={(value) => updateRequest(item.id, { statut: value })} /> },
           { content: <CommentEditor value={item.commentaire} onSave={(value) => updateRequest(item.id, { commentaire: value })} /> },
           { content: <span className="cell-muted">{formatDate(item.date)}</span> },
         ]
       : [
-          { content: <span className="cell-strong">{item.nom}</span> },
-          { content: item.prenom },
-          { content: item.matricule },
-          { content: item.site },
+          { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+          { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+          { content: item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span> },
           { content: item.societe },
           { content: item.type_demande },
-          { content: item.motif },
+          { content: item.motif ? item.motif : <span className="comment-editor__placeholder">Saisissez un motif...</span> },
           { content: renderStatusBadge(item.statut) },
           { content: item.commentaire ? <span className="cell-note">{item.commentaire}</span> : <span className="comment-editor__placeholder">—</span> },
           { content: <span className="cell-muted">{formatDate(item.date)}</span> },
@@ -194,6 +199,12 @@ export default function AttestationPage({ user, isValidationView = false }) {
       {showModal ? (
         <FormTemplate
           title="Demande d'Attestation"
+          headerControl={
+            <Select value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)} style={{ width: '200px' }}>
+              <option value="pour_moi">Pour moi</option>
+              <option value="pour_autre">Pour une autre personne</option>
+            </Select>
+          }
           onClose={() => setShowModal(false)}
           footer={(
             <>
@@ -209,31 +220,18 @@ export default function AttestationPage({ user, isValidationView = false }) {
           <AlertMessage message={error} />
 
           <FormRow>
-            <FormGroup label="Nom">
-              <Input value={form.nom} readOnly />
+            <FormGroup label="Nom" required>
+              <Input value={form.nom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, nom: event.target.value }))} />
             </FormGroup>
-            <FormGroup label="Prenom">
-              <Input value={form.prenom} readOnly />
+            <FormGroup label="Prenom" required>
+              <Input value={form.prenom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, prenom: event.target.value }))} />
             </FormGroup>
           </FormRow>
 
           <FormRow>
             <FormGroup label="Matricule" required>
-              <Input value={form.matricule} onChange={(event) => setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
+              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
             </FormGroup>
-            <FormGroup label="Site de rattachement" required>
-              <Select value={form.site} onChange={(event) => setForm((current) => ({ ...current, site: event.target.value }))}>
-                <option value="">Selectionner un site</option>
-                {SITE_OPTIONS.map((site) => (
-                  <option key={site} value={site}>
-                    {site}
-                  </option>
-                ))}
-              </Select>
-            </FormGroup>
-          </FormRow>
-
-          <FormRow>
             <FormGroup label="Societe" required>
               <Select value={form.societe} onChange={(event) => setForm((current) => ({ ...current, societe: event.target.value }))}>
                 {COMPANY_OPTIONS.map((company) => (
@@ -243,6 +241,9 @@ export default function AttestationPage({ user, isValidationView = false }) {
                 ))}
               </Select>
             </FormGroup>
+          </FormRow>
+
+          <FormRow>
             <FormGroup label="Type de demande" required>
               <Select value={form.type_demande} onChange={(event) => setForm((current) => ({ ...current, type_demande: event.target.value }))}>
                 {REQUEST_TYPES.map((item) => (
@@ -255,7 +256,7 @@ export default function AttestationPage({ user, isValidationView = false }) {
           </FormRow>
 
           <FormGroup label="Motif">
-            <Textarea value={form.motif} onChange={(event) => setForm((current) => ({ ...current, motif: event.target.value }))} />
+            <Textarea value={form.motif} onChange={(event) => setForm((current) => ({ ...current, motif: event.target.value }))} placeholder="Saisissez un motif..." />
           </FormGroup>
         </FormTemplate>
       ) : null}

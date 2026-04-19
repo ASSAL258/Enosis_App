@@ -16,7 +16,6 @@ import DataTable from '../organisms/DataTable.jsx'
 import ProcessOverview from '../organisms/ProcessOverview.jsx'
 import FormTemplate from '../templates/FormTemplate.jsx'
 
-const SITE_OPTIONS = ['Casablanca', 'Jorf Lasfar']
 const ABSENCE_TYPES = ['Normale', 'Maladie']
 const HOLIDAYS = ['01-01', '01-11', '05-01', '07-30', '08-14', '08-20', '08-21', '11-06', '11-18']
 const STATUS_OPTIONS = [
@@ -30,12 +29,12 @@ const STATUS_META = {
   rejete: { label: 'Rejetee', tone: 'danger' },
 }
 
-function createInitialForm(user) {
+function createInitialForm(user, selectedUser = 'pour_moi') {
+  const isForOther = selectedUser === 'pour_autre'
   return {
-    nom: user.last,
-    prenom: user.first,
-    matricule: user.matricule || '',
-    site: user.site || '',
+    nom: isForOther ? '' : user.last,
+    prenom: isForOther ? '' : user.first,
+    matricule: isForOther ? '' : (user.matricule || ''),
     type_absence: 'Normale',
     date_debut: '',
     date_fin: '',
@@ -91,7 +90,8 @@ export default function CongePage({ user, isValidationView = false }) {
   const isManager = user.role === 'manager' && isValidationView
   const [conges, setConges] = useState([])
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState(createInitialForm(user))
+  const [selectedUser, setSelectedUser] = useState('pour_moi')
+  const [form, setForm] = useState(createInitialForm(user, selectedUser))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -109,6 +109,12 @@ export default function CongePage({ user, isValidationView = false }) {
   useEffect(() => {
     fetchConges()
   }, [user.token, isValidationView])
+
+  useEffect(() => {
+    if (showModal) {
+      setForm(createInitialForm(user, selectedUser))
+    }
+  }, [selectedUser, showModal])
 
   useEffect(() => {
     if (form.date_fin && form.date_debut && form.date_fin < form.date_debut) {
@@ -140,7 +146,8 @@ export default function CongePage({ user, isValidationView = false }) {
   }
 
   function openModal() {
-    setForm(createInitialForm(user))
+    setSelectedUser('pour_moi')
+    setForm(createInitialForm(user, 'pour_moi'))
     setError('')
     setShowModal(true)
   }
@@ -164,15 +171,15 @@ export default function CongePage({ user, isValidationView = false }) {
           Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify({
-          nom: user.last,
-          prenom: user.first,
+          nom: form.nom,
+          prenom: form.prenom,
           matricule: form.matricule,
-          site: form.site,
           type_absence: form.type_absence,
           date_debut: form.date_debut,
           date_fin: form.date_fin,
           nombre_jours: workingDays,
           motif: form.motif,
+          user_email: user.email,
         }),
       })
       if (!response.ok) {
@@ -182,7 +189,7 @@ export default function CongePage({ user, isValidationView = false }) {
         return
       }
       setShowModal(false)
-      setForm(createInitialForm(user))
+      setForm(createInitialForm(user, 'pour_moi'))
       fetchConges()
     } catch {
       setError('Erreur reseau.')
@@ -191,10 +198,10 @@ export default function CongePage({ user, isValidationView = false }) {
   }
 
   const headers = isRH
-    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Site', 'Type', 'Debut', 'Fin', 'Jours', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Solde Avant', 'Solde Accorde', 'Solde Apres', 'Statut RH', 'Commentaire RH', 'Date']
+    ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Type', 'Debut', 'Fin', 'Jours', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Solde Avant', 'Solde Accorde', 'Solde Apres', 'Statut Rh', 'Commentaire Rh', 'Date']
     : isManager
-      ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Site', 'Type', 'Debut', 'Fin', 'Jours', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Solde Avant', 'Solde Accorde', 'Solde Apres', 'Statut RH', 'Commentaire RH', 'Date']
-      : ['Nom', 'Prenom', 'Matricule', 'Site', 'Type', 'Debut', 'Fin', 'Jours', 'Motif', 'Statut Mgr', 'Comm. Mgr', 'Solde Initial', 'Solde Accorde', 'Solde Restant', 'Statut RH', 'Comm. RH', 'Date']
+      ? ['Email', 'Nom', 'Prenom', 'Matricule', 'Type', 'Debut', 'Fin', 'Jours', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Solde Avant', 'Solde Accorde', 'Solde Apres', 'Statut Rh', 'Commentaire Rh', 'Date']
+      : ['Nom', 'Prenom', 'Matricule', 'Type', 'Debut', 'Fin', 'Jours', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Solde Initial', 'Solde Accorde', 'Solde Restant', 'Statut Rh', 'Commentaire Rh', 'Date']
 
   const rows = conges.map((item) => {
     const managerRejected = item.statut_manager === 'rejete'
@@ -209,12 +216,11 @@ export default function CongePage({ user, isValidationView = false }) {
           { content: <span className="cell-strong">{item.nom}</span> },
           { content: item.prenom },
           { content: <span className="cell-muted">{item.matricule}</span> },
-          { content: item.site },
           { content: item.type_absence },
           { content: <span className="cell-muted">{formatDate(item.date_debut)}</span> },
           { content: <span className="cell-muted">{formatDate(item.date_fin)}</span> },
           { content: <span className="cell-count">{item.nombre_jours}</span> },
-          { content: <span className="cell-wrap">{item.motif || '—'}</span> },
+          { content: <span className="cell-wrap">{item.motif || <span className="comment-editor__placeholder">Saisissez un motif...</span>}</span> },
           { content: renderStatusBadge(item.statut_manager) },
           { content: item.commentaire_manager || <span className="comment-editor__placeholder">—</span> },
           { content: managerRejected ? <span className="comment-editor__placeholder">—</span> : <EditableNumberCell value={item.solde_avant} onSave={(value) => updateRequest(item.id, { solde_avant: value })} /> },
@@ -236,7 +242,6 @@ export default function CongePage({ user, isValidationView = false }) {
           { content: <span className="cell-strong">{item.nom}</span> },
           { content: item.prenom },
           { content: <span className="cell-muted">{item.matricule}</span> },
-          { content: item.site },
           { content: item.type_absence },
           { content: <span className="cell-muted">{formatDate(item.date_debut)}</span> },
           { content: <span className="cell-muted">{formatDate(item.date_fin)}</span> },
@@ -258,10 +263,9 @@ export default function CongePage({ user, isValidationView = false }) {
       key: item.id,
       className: item.statut_rh === 'en_attente' ? 'is-pending' : '',
       cells: [
-        { content: <span className="cell-strong">{item.nom}</span> },
-        { content: item.prenom },
-        { content: <span className="cell-muted">{item.matricule}</span> },
-        { content: item.site },
+        { content: item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span> },
+        { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+        { content: item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span> },
         { content: item.type_absence },
         { content: <span className="cell-muted">{formatDate(item.date_debut)}</span> },
         { content: <span className="cell-muted">{formatDate(item.date_fin)}</span> },
@@ -309,6 +313,12 @@ export default function CongePage({ user, isValidationView = false }) {
       {showModal ? (
         <FormTemplate
           title="Demande de Conge"
+          headerControl={
+            <Select value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)} style={{ width: '200px' }}>
+              <option value="pour_moi">Pour moi</option>
+              <option value="pour_autre">Pour une autre personne</option>
+            </Select>
+          }
           onClose={() => setShowModal(false)}
           footer={(
             <>
@@ -324,39 +334,28 @@ export default function CongePage({ user, isValidationView = false }) {
           <AlertMessage message={error} />
 
           <FormRow>
-            <FormGroup label="Nom">
-              <Input value={form.nom} readOnly />
+            <FormGroup label="Nom" required>
+              <Input value={form.nom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, nom: event.target.value }))} />
             </FormGroup>
-            <FormGroup label="Prenom">
-              <Input value={form.prenom} readOnly />
+            <FormGroup label="Prenom" required>
+              <Input value={form.prenom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, prenom: event.target.value }))} />
             </FormGroup>
           </FormRow>
 
           <FormRow>
             <FormGroup label="Matricule" required>
-              <Input value={form.matricule} onChange={(event) => setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
+              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
             </FormGroup>
-            <FormGroup label="Site de rattachement" required>
-              <Select value={form.site} onChange={(event) => setForm((current) => ({ ...current, site: event.target.value }))}>
-                <option value="">Selectionner un site</option>
-                {SITE_OPTIONS.map((site) => (
-                  <option key={site} value={site}>
-                    {site}
+            <FormGroup label="Type d'absence" required>
+              <Select value={form.type_absence} onChange={(event) => setForm((current) => ({ ...current, type_absence: event.target.value }))}>
+                {ABSENCE_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
                   </option>
                 ))}
               </Select>
             </FormGroup>
           </FormRow>
-
-          <FormGroup label="Type d'absence" required>
-            <Select value={form.type_absence} onChange={(event) => setForm((current) => ({ ...current, type_absence: event.target.value }))}>
-              {ABSENCE_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </Select>
-          </FormGroup>
 
           <FormRow>
             <FormGroup

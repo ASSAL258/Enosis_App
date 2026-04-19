@@ -15,7 +15,6 @@ import DataTable from '../organisms/DataTable.jsx'
 import ProcessOverview from '../organisms/ProcessOverview.jsx'
 import FormTemplate from '../templates/FormTemplate.jsx'
 
-const SITE_OPTIONS = ['Casablanca', 'Jorf Lasfar']
 const DURATIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const STATUS_OPTIONS = [
   { value: 'en_attente', label: 'En attente' },
@@ -28,12 +27,12 @@ const STATUS_META = {
   rejete: { label: 'Rejetee', tone: 'danger' },
 }
 
-function createInitialForm(user) {
+function createInitialForm(user, selectedUser = 'pour_moi') {
+  const isForOther = selectedUser === 'pour_autre'
   return {
-    nom: user.last,
-    prenom: user.first,
-    matricule: user.matricule || '',
-    site: user.site || '',
+    nom: isForOther ? '' : user.last,
+    prenom: isForOther ? '' : user.first,
+    matricule: isForOther ? '' : (user.matricule || ''),
     fonction: '',
     montant: '',
     duree: 1,
@@ -59,7 +58,8 @@ export default function PretPage({ user, isValidationView = false }) {
   const isManager = user.role === 'manager' && isValidationView
   const [prets, setPrets] = useState([])
   const [showModal, setShowModal] = useState(false)
-  const [form, setForm] = useState(createInitialForm(user))
+  const [selectedUser, setSelectedUser] = useState('pour_moi')
+  const [form, setForm] = useState(createInitialForm(user, selectedUser))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -77,6 +77,12 @@ export default function PretPage({ user, isValidationView = false }) {
   useEffect(() => {
     fetchPrets()
   }, [user.token, isValidationView])
+
+  useEffect(() => {
+    if (showModal) {
+      setForm(createInitialForm(user, selectedUser))
+    }
+  }, [selectedUser, showModal])
 
   const metrics = useMemo(() => {
     const statusField = isRH ? 'statut_rh' : 'statut_manager'
@@ -101,7 +107,8 @@ export default function PretPage({ user, isValidationView = false }) {
   }
 
   function openModal() {
-    setForm(createInitialForm(user))
+    setSelectedUser('pour_moi')
+    setForm(createInitialForm(user, 'pour_moi'))
     setError('')
     setShowModal(true)
   }
@@ -125,14 +132,14 @@ export default function PretPage({ user, isValidationView = false }) {
           Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify({
-          nom: user.last,
-          prenom: user.first,
+          nom: form.nom,
+          prenom: form.prenom,
           matricule: form.matricule,
-          site: form.site,
           fonction: form.fonction,
           montant: parseFloat(form.montant),
           duree: parseInt(form.duree, 10),
           motif: form.motif,
+          user_email: user.email,
         }),
       })
       if (!response.ok) {
@@ -142,7 +149,7 @@ export default function PretPage({ user, isValidationView = false }) {
         return
       }
       setShowModal(false)
-      setForm(createInitialForm(user))
+      setForm(createInitialForm(user, 'pour_moi'))
       fetchPrets()
     } catch {
       setError('Erreur reseau.')
@@ -150,8 +157,8 @@ export default function PretPage({ user, isValidationView = false }) {
     setLoading(false)
   }
 
-  const headers = ['Email', 'Nom', 'Prenom', 'Matricule', 'Site', 'Fonction', 'Montant', 'Duree', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Statut RH', 'Commentaire RH', 'Date Demande']
-  const employeeHeaders = ['Nom', 'Prenom', 'Matricule', 'Site', 'Fonction', 'Montant', 'Duree', 'Motif', 'Statut Mgr', 'Comm. Mgr', 'Statut RH', 'Comm. RH', 'Date Demande']
+  const headers = ['Email', 'Nom', 'Prenom', 'Matricule', 'Fonction', 'Montant demande', 'Duree', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Statut Rh', 'Commentaire Rh', 'Date Demande']
+  const employeeHeaders = ['Nom', 'Prenom', 'Matricule', 'Fonction', 'Montant demande', 'Duree', 'Motif', 'Statut Manager', 'Commentaire Manager', 'Statut Rh', 'Commentaire Rh', 'Date Demande']
 
   const rows = prets.map((item) => {
     const rhDisabled = item.statut_manager !== 'valide'
@@ -163,14 +170,13 @@ export default function PretPage({ user, isValidationView = false }) {
         className: item.statut_rh === 'en_attente' ? 'is-pending' : '',
         cells: [
           { content: <span className="cell-email">{item.userEmail || '—'}</span> },
-          { content: <span className="cell-strong">{item.nom}</span> },
-          { content: item.prenom },
-          { content: <span className="cell-muted">{item.matricule}</span> },
-          { content: item.site },
-          { content: item.fonction },
-          { content: <span className="cell-money">{item.montant} DH</span> },
+          { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+          { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+          { content: <span className="cell-muted">{item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span>}</span> },
+          { content: item.fonction || <span className="comment-editor__placeholder">Saisissez une fonction...</span> },
+          { content: <span className="cell-money">{item.montant ? item.montant + ' DH' : <span className="comment-editor__placeholder">Saisissez un montant...</span>}</span> },
           { content: `${item.duree} mois` },
-          { content: item.motif || <span className="comment-editor__placeholder">—</span> },
+          { content: item.motif || <span className="comment-editor__placeholder">Saisissez un motif...</span> },
           { content: renderStatusBadge(item.statut_manager) },
           { content: item.commentaire_manager ? <span className="cell-note">{item.commentaire_manager}</span> : <span className="comment-editor__placeholder">—</span> },
           { content: managerRejected ? <span className="comment-editor__placeholder">—</span> : <StatusSelect value={item.statut_rh} options={STATUS_OPTIONS} toneByValue={getStatusTone} disabled={rhDisabled} onChange={(value) => updateRequest(item.id, { statut_rh: value })} /> },
@@ -186,14 +192,13 @@ export default function PretPage({ user, isValidationView = false }) {
         className: item.statut_manager === 'en_attente' ? 'is-pending' : '',
         cells: [
           { content: <span className="cell-email">{item.userEmail || '—'}</span> },
-          { content: <span className="cell-strong">{item.nom}</span> },
-          { content: item.prenom },
-          { content: <span className="cell-muted">{item.matricule}</span> },
-          { content: item.site },
-          { content: item.fonction },
-          { content: <span className="cell-money">{item.montant} DH</span> },
+          { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
+          { content: item.prenom || <span className="comment-editor__placeholder">Saisissez un prenom...</span> },
+          { content: <span className="cell-muted">{item.matricule || <span className="comment-editor__placeholder">Saisissez le matricule...</span>}</span> },
+          { content: item.fonction || <span className="comment-editor__placeholder">Saisissez une fonction...</span> },
+          { content: <span className="cell-money">{item.montant ? item.montant + ' DH' : <span className="comment-editor__placeholder">Saisissez un montant...</span>}</span> },
           { content: `${item.duree} mois` },
-          { content: item.motif || <span className="comment-editor__placeholder">—</span> },
+          { content: item.motif || <span className="comment-editor__placeholder">Saisissez un motif...</span> },
           { content: <StatusSelect value={item.statut_manager} options={STATUS_OPTIONS} toneByValue={getStatusTone} onChange={(value) => updateRequest(item.id, { statut_manager: value })} /> },
           { content: <CommentEditor value={item.commentaire_manager} onSave={(value) => updateRequest(item.id, { commentaire_manager: value })} /> },
           { content: managerRejected ? <span className="comment-editor__placeholder">—</span> : renderStatusBadge(item.statut_rh) },
@@ -207,14 +212,13 @@ export default function PretPage({ user, isValidationView = false }) {
       key: item.id,
       className: item.statut_rh === 'en_attente' ? 'is-pending' : '',
       cells: [
-        { content: <span className="cell-strong">{item.nom}</span> },
+        { content: <span className="cell-strong">{item.nom || <span className="comment-editor__placeholder">Saisissez un nom...</span>}</span> },
         { content: item.prenom },
         { content: <span className="cell-muted">{item.matricule}</span> },
-        { content: item.site },
         { content: item.fonction },
         { content: <span className="cell-money">{item.montant} DH</span> },
         { content: `${item.duree} mois` },
-        { content: item.motif || <span className="comment-editor__placeholder">—</span> },
+        { content: item.motif || <span className="comment-editor__placeholder">Saisissez un motif...</span> },
         { content: renderStatusBadge(item.statut_manager) },
         { content: item.commentaire_manager ? <span className="cell-note">{item.commentaire_manager}</span> : <span className="comment-editor__placeholder">—</span> },
         { content: renderStatusBadge(item.statut_rh) },
@@ -254,6 +258,12 @@ export default function PretPage({ user, isValidationView = false }) {
       {showModal ? (
         <FormTemplate
           title="Demande de Pret"
+          headerControl={
+            <Select value={selectedUser} onChange={(event) => setSelectedUser(event.target.value)} style={{ width: '200px' }}>
+              <option value="pour_moi">Pour moi</option>
+              <option value="pour_autre">Pour une autre personne</option>
+            </Select>
+          }
           onClose={() => setShowModal(false)}
           footer={(
             <>
@@ -269,37 +279,26 @@ export default function PretPage({ user, isValidationView = false }) {
           <AlertMessage message={error} />
 
           <FormRow>
-            <FormGroup label="Nom">
-              <Input value={form.nom} readOnly />
+            <FormGroup label="Nom" required>
+              <Input value={form.nom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, nom: event.target.value }))} />
             </FormGroup>
-            <FormGroup label="Prenom">
-              <Input value={form.prenom} readOnly />
+            <FormGroup label="Prenom" required>
+              <Input value={form.prenom} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, prenom: event.target.value }))} />
             </FormGroup>
           </FormRow>
 
           <FormRow>
             <FormGroup label="Matricule" required>
-              <Input value={form.matricule} onChange={(event) => setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
+              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
             </FormGroup>
-            <FormGroup label="Site de rattachement" required>
-              <Select value={form.site} onChange={(event) => setForm((current) => ({ ...current, site: event.target.value }))}>
-                <option value="">Selectionner un site</option>
-                {SITE_OPTIONS.map((site) => (
-                  <option key={site} value={site}>
-                    {site}
-                  </option>
-                ))}
-              </Select>
+            <FormGroup label="Fonction" required>
+              <Input type="text" value={form.fonction} onChange={(event) => setForm((current) => ({ ...current, fonction: event.target.value }))} />
             </FormGroup>
           </FormRow>
 
-          <FormGroup label="Fonction" required>
-            <Input type="text" value={form.fonction} onChange={(event) => setForm((current) => ({ ...current, fonction: event.target.value }))} placeholder="Ex: Developpeur full-stack" />
-          </FormGroup>
-
           <FormRow>
             <FormGroup label="Montant demande (DH)" required>
-              <Input type="number" min="1" step="100" value={form.montant} onChange={(event) => setForm((current) => ({ ...current, montant: event.target.value }))} placeholder="Ex: 5000" />
+              <Input type="number" min="1" step="100" value={form.montant} onChange={(event) => setForm((current) => ({ ...current, montant: event.target.value }))} />
             </FormGroup>
             <FormGroup label="Duree souhaitee (mois)" required>
               <Select value={form.duree} onChange={(event) => setForm((current) => ({ ...current, duree: event.target.value }))}>
