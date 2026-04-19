@@ -7,6 +7,11 @@ Dockerized Django application scaffold.
 This repository now includes a microservices-ready layout under `services/`.
 
 - `services/api-gateway/`
+- `services/avance-service/`
+- `services/attestation-service/`
+- `services/rib-service/`
+- `services/conge-service/`
+- `services/pret-service/`
 - `services/auth-service/`
 - `services/user-service/`
 - `infra/`
