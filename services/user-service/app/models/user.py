@@ -1,7 +1,10 @@
+import uuid
+
 from django.db import models
 
 
 class User(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     matricule = models.CharField(max_length=50, unique=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
@@ -10,15 +13,7 @@ class User(models.Model):
     role_id = models.UUIDField(null=True, blank=True)
     manager_id = models.UUIDField(null=True, blank=True)
     rh_id = models.UUIDField(null=True, blank=True)
-    departement = models.ForeignKey(
-        "app.Departement",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="users",
-        db_column="departement_id",
-        to_field="id",
-    )
+    departement_id = models.UUIDField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

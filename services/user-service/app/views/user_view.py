@@ -8,10 +8,20 @@ from app.services import UserService
 
 
 class UserViewSet(ViewSet):
-    def list(self, _request):
+    def list(self, request):
         try:
-            users = UserService.list_users()
+            email = request.query_params.get("email")
+            users = UserService.list_users(email=email)
             return Response(UserSerializer(users, many=True).data)
+        except UserOperationException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def retrieve(self, _request, pk=None):
+        try:
+            user = UserService.get_user_by_id(pk)
+            if user is None:
+                return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
         except UserOperationException as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 

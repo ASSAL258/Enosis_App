@@ -1,81 +1,459 @@
 services:
-	web:
-		build:
-			context: ./backend
-		container_name: enosis_django_web
-		command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
-		working_dir: /app
-		volumes:
-			- ./backend:/app
-		ports:
-			- "8000:8000"
-		restart: unless-stopped
+  web-db:
+    image: postgres:16-alpine
+    container_name: enosis_web_db
+    environment:
+      POSTGRES_DB: web_db
+      POSTGRES_USER: web_user
+      POSTGRES_PASSWORD: web_user
+    volumes:
+      - web-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U web_user -d web_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-	config-service:
-		build:
-			context: ./services/config-service
-		container_name: enosis_config_service
-		ports:
-			- "5000:5000"
-		restart: unless-stopped
+  config-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_config_service_db
+    environment:
+      POSTGRES_DB: config_service_db
+      POSTGRES_USER: config_service
+      POSTGRES_PASSWORD: config_service
+    volumes:
+      - config-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U config_service -d config_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-	discovery-service:
-		image: hashicorp/consul:1.20
-		container_name: enosis_discovery_service
-		command: agent -config-file=/consul/config/consul.hcl
-		volumes:
-			- ./infra/discovery/consul.hcl:/consul/config/consul.hcl:ro
-		ports:
-			- "8500:8500"
-			- "8600:8600/udp"
-		restart: unless-stopped
+  user-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_user_service_db
+    environment:
+      POSTGRES_DB: user_service_db
+      POSTGRES_USER: user_service
+      POSTGRES_PASSWORD: user_service
+    volumes:
+      - user-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_service -d user_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-	service-registrator:
-		image: gliderlabs/registrator:latest
-		container_name: enosis_service_registrator
-		command: -internal consul://discovery-service:8500
-		volumes:
-			- /var/run/docker.sock:/tmp/docker.sock
-		depends_on:
-			- discovery-service
-		restart: unless-stopped
+  auth-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_auth_service_db
+    environment:
+      POSTGRES_DB: auth_service_db
+      POSTGRES_USER: auth_service
+      POSTGRES_PASSWORD: auth_service
+    volumes:
+      - auth-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_service -d auth_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-	api-gateway:
-		build:
-			context: .
-			dockerfile: services/api-gateway/Dockerfile
-		container_name: enosis_api_gateway
-		ports:
-			- "8080:80"
-		depends_on:
-			- discovery-service
-			- config-service
-			- web
-		restart: unless-stopped
+  feedback-user-db:
+    image: postgres:16-alpine
+    container_name: enosis_feedback_user_db
+    environment:
+      POSTGRES_DB: feedback_user_db
+      POSTGRES_USER: feedback_user
+      POSTGRES_PASSWORD: feedback_user
+    volumes:
+      - feedback-user-db-data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U feedback_user -d feedback_user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-	rabbitmq:
-		image: rabbitmq:3.13-management
-		container_name: enosis_rabbitmq
-		environment:
-			RABBITMQ_DEFAULT_USER: guest
-			RABBITMQ_DEFAULT_PASS: guest
-		ports:
-			- "5672:5672"
-			- "15672:15672"
-		restart: unless-stopped
+  avance-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_avance_service_db
+    environment:
+      POSTGRES_DB: avance_service_db
+      POSTGRES_USER: avance_service
+      POSTGRES_PASSWORD: avance_service
+    volumes:
+      - avance-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U avance_service -d avance_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-	avance-feedback-consumer:
-		build:
-			context: ./services/avance-service
-		container_name: enosis_avance_feedback_consumer
-		command: sh -c "python services/feedback_created_consumer.py"
-		environment:
-			RABBITMQ_HOST: rabbitmq
-			RABBITMQ_PORT: 5672
-			RABBITMQ_USER: guest
-			RABBITMQ_PASS: guest
-			FEEDBACK_CREATED_QUEUE: feedback.created
-		depends_on:
-			- rabbitmq
-		restart: unless-stopped
+  web:
+    build:
+      context: ./backend
+    container_name: enosis_django_web
+    command: sh -c "python manage.py migrate --run-syncdb && python manage.py runserver 0.0.0.0:8000"
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    environment:
+      POSTGRES_DB: web_db
+      POSTGRES_USER: web_user
+      POSTGRES_PASSWORD: web_user
+      POSTGRES_HOST: web-db
+      POSTGRES_PORT: 5432
+    depends_on:
+      web-db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  config-service:
+    build:
+      context: ./services/config-service
+    container_name: enosis_config_service
+    environment:
+      POSTGRES_DB: config_service_db
+      POSTGRES_USER: config_service
+      POSTGRES_PASSWORD: config_service
+      POSTGRES_HOST: config-service-db
+      POSTGRES_PORT: 5432
+      USER_SERVICE_URL: http://user-service:5002
+      AUTH_SERVICE_URL: http://auth-service:5003
+      DEPARTEMENT_SERVICE_URL: http://departement-service:5005
+      COURSE_SERVICE_URL: http://course-service:5006
+      COURIER_TIME_SERVICE_URL: http://courier-time-service:5007
+    depends_on:
+      config-service-db:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ./services/user-service
+    container_name: enosis_user_service
+    environment:
+      POSTGRES_DB: user_service_db
+      POSTGRES_USER: user_service
+      POSTGRES_PASSWORD: user_service
+      POSTGRES_HOST: user-service-db
+      POSTGRES_PORT: 5432
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+    networks:
+      default:
+        aliases:
+          - user-service
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: ./services/auth-service
+    container_name: enosis_auth_service
+    environment:
+      POSTGRES_DB: auth_service_db
+      POSTGRES_USER: auth_service
+      POSTGRES_PASSWORD: auth_service
+      POSTGRES_HOST: auth-service-db
+      POSTGRES_PORT: 5432
+      CONFIG_SERVICE_URL: http://config-service:5000
+      USER_SERVICE_URL: http://user-service:5002
+    depends_on:
+      auth-service-db:
+        condition: service_healthy
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+
+  feedback-user:
+    build:
+      context: ./services/feedback-user
+    container_name: enosis_feedback_user_service
+    environment:
+      POSTGRES_DB: feedback_user_db
+      POSTGRES_USER: feedback_user
+      POSTGRES_PASSWORD: feedback_user
+      POSTGRES_HOST: feedback-user-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      FEEDBACK_CREATED_QUEUE: feedback.created
+    depends_on:
+      feedback-user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+
+  avance-service:
+    build:
+      context: ./services/avance-service
+    container_name: enosis_avance_service
+    environment:
+      POSTGRES_DB: avance_service_db
+      POSTGRES_USER: avance_service
+      POSTGRES_PASSWORD: avance_service
+      POSTGRES_HOST: avance-service-db
+      POSTGRES_PORT: 5432
+    depends_on:
+      avance-service-db:
+        condition: service_healthy
+    ports:
+      - "5004:5004"
+    restart: unless-stopped
+
+  avance-feedback-consumer:
+    build:
+      context: ./services/avance-service
+    container_name: enosis_avance_feedback_consumer
+    command: sh -c "python -m app.services.feedback_created_consumer"
+    environment:
+      POSTGRES_DB: avance_service_db
+      POSTGRES_USER: avance_service
+      POSTGRES_PASSWORD: avance_service
+      POSTGRES_HOST: avance-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      FEEDBACK_CREATED_QUEUE: feedback.created
+    depends_on:
+      avance-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+
+  discovery-service:
+    image: hashicorp/consul:1.20
+    container_name: enosis_discovery_service
+    command: agent -config-file=/consul/config/consul.hcl
+    volumes:
+      - ./infra/discovery/consul.hcl:/consul/config/consul.hcl:ro
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+    restart: unless-stopped
+
+  departement-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_departement_service_db
+    environment:
+      POSTGRES_DB: departement_service_db
+      POSTGRES_USER: departement_service
+      POSTGRES_PASSWORD: departement_service
+    volumes:
+      - departement-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U departement_service -d departement_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  course-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_course_service_db
+    environment:
+      POSTGRES_DB: course_service_db
+      POSTGRES_USER: course_service
+      POSTGRES_PASSWORD: course_service
+    volumes:
+      - course-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5439:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U course_service -d course_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  courier-time-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_courier_time_service_db
+    environment:
+      POSTGRES_DB: courier_time_service_db
+      POSTGRES_USER: courier_time_service
+      POSTGRES_PASSWORD: courier_time_service
+    volumes:
+      - courier-time-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U courier_time_service -d courier_time_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  departement-service:
+    build:
+      context: ./services/departement-service
+    container_name: enosis_departement_service
+    environment:
+      POSTGRES_DB: departement_service_db
+      POSTGRES_USER: departement_service
+      POSTGRES_PASSWORD: departement_service
+      POSTGRES_HOST: departement-service-db
+      POSTGRES_PORT: 5432
+    depends_on:
+      departement-service-db:
+        condition: service_healthy
+    ports:
+      - "5005:5005"
+    restart: unless-stopped
+
+  course-service:
+    build:
+      context: ./services/course-service
+    container_name: enosis_course_service
+    environment:
+      POSTGRES_DB: course_service_db
+      POSTGRES_USER: course_service
+      POSTGRES_PASSWORD: course_service
+      POSTGRES_HOST: course-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      DELIVERED_TIME_CREATED_QUEUE: delivered_time.created
+    depends_on:
+      course-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      default:
+        aliases:
+          - course-service
+    ports:
+      - "5006:5006"
+    restart: unless-stopped
+
+  course-delivered-time-consumer:
+    build:
+      context: ./services/course-service
+    container_name: enosis_course_delivered_time_consumer
+    command: sh -c "python -m app.services.delivered_time_created_consumer"
+    environment:
+      POSTGRES_DB: course_service_db
+      POSTGRES_USER: course_service
+      POSTGRES_PASSWORD: course_service
+      POSTGRES_HOST: course-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      DELIVERED_TIME_CREATED_QUEUE: delivered_time.created
+    depends_on:
+      course-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+
+  courier-time-service:
+    build:
+      context: ./services/courier-time-service
+    container_name: enosis_courier_time_service
+    environment:
+      POSTGRES_DB: courier_time_service_db
+      POSTGRES_USER: courier_time_service
+      POSTGRES_PASSWORD: courier_time_service
+      POSTGRES_HOST: courier-time-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      DELIVERED_TIME_CREATED_QUEUE: delivered_time.created
+    depends_on:
+      courier-time-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      default:
+        aliases:
+          - courier-time-service
+    ports:
+      - "5007:5007"
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: enosis_api_gateway
+    ports:
+      - "8080:80"
+    depends_on:
+      - discovery-service
+      - config-service
+      - web
+      - user-service
+      - auth-service
+      - feedback-user
+      - avance-service
+      - departement-service
+      - course-service
+      - courier-time-service
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: enosis_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+
+volumes:
+  web-db-data:
+  config-service-db-data:
+  user-service-db-data:
+  auth-service-db-data:
+  feedback-user-db-data:
+  avance-service-db-data:
+  departement-service-db-data:
+  course-service-db-data:
+  courier-time-service-db-data:
 

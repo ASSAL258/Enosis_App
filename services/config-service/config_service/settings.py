@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -32,8 +33,12 @@ WSGI_APPLICATION = "config_service.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB", "config_service_db"),
+        "USER": os.getenv("POSTGRES_USER", "config_service"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "config_service"),
+        "HOST": os.getenv("POSTGRES_HOST", "config-service-db"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
     }
 }
 

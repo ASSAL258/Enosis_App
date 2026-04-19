@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from app.models import Departement, User
+from app.models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -30,9 +30,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
     role_id = serializers.UUIDField(required=False, allow_null=True)
     manager_id = serializers.UUIDField(required=False, allow_null=True)
     rh_id = serializers.UUIDField(required=False, allow_null=True)
-    departement_id = serializers.PrimaryKeyRelatedField(
-        source="departement", queryset=Departement.objects.all(), required=False, allow_null=True
-    )
+    departement_id = serializers.UUIDField(required=False, allow_null=True)
 
     class Meta:
         model = User

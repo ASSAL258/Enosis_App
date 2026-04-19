@@ -1,3 +1,11 @@
-from .avance_exceptions import AvanceOperationException, AvanceServiceException
+from .avance_exceptions import (
+	AvanceNotFoundException,
+	AvanceOperationException,
+	AvanceServiceException,
+)
 
-__all__ = ["AvanceServiceException", "AvanceOperationException"]
+__all__ = [
+	"AvanceServiceException",
+	"AvanceOperationException",
+	"AvanceNotFoundException",
+]

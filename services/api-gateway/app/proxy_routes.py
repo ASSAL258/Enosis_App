@@ -1,4 +1,12 @@
 SERVICE_ROUTES = {
     "/api/users": "http://user-service:8000/users/",
-    "/api/auth/login": "http://auth-service:8000/auth/login/",
+    "/api/auth": "http://auth-service:5003/auth/",
+    "/api/auth/login": "http://auth-service:5003/auth/login/",
+    "/api/auth/register": "http://auth-service:5003/auth/register/",
+    "/api/auth/refresh": "http://auth-service:5003/auth/refresh/",
+    "/api/auth/swagger": "http://auth-service:5003/swagger/",
+    "/api/auth/redoc": "http://auth-service:5003/redoc/",
+    "/api/departements": "http://departement-service:5005/departements/",
+    "/api/courses": "http://course-service:5006/courses/",
+    "/api/delivered-times": "http://courier-time-service:5007/delivered-times/",
 }

@@ -5,8 +5,12 @@ from app.repositories import UserRepository
 
 class UserService:
     @staticmethod
-    def list_users():
-        return UserRepository.list_users()
+    def list_users(*, email: str | None = None):
+        return UserRepository.list_users(email=email)
+
+    @staticmethod
+    def get_user_by_id(user_id: str):
+        return UserRepository.get_user_by_id(user_id)
 
     @staticmethod
     def create_user(validated_data: dict):

@@ -4,3 +4,7 @@ class AvanceServiceException(Exception):
 
 class AvanceOperationException(AvanceServiceException):
     pass
+
+
+class AvanceNotFoundException(AvanceServiceException):
+    pass

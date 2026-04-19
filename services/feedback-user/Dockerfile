@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 5001
 
-CMD ["python", "-m", "http.server", "5001"]
+CMD ["sh", "-c", "python manage.py migrate --run-syncdb && python manage.py runserver 0.0.0.0:5001"]

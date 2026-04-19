@@ -1,5 +1,6 @@
-from repositories.avance_repository import AvanceRepository
-from models.avance import Avance
+from app.models import Avance
+from app.exceptions import AvanceNotFoundException, AvanceOperationException
+from app.repositories import AvanceRepository
 
 class AvanceService:
     def __init__(self):
@@ -12,16 +13,38 @@ class AvanceService:
 
         role = user_role.strip().lower()
         if role == "manager":
-            return self.avance_repository.set_feedback_manager(avance, feedback_id=feedback_id)
+            return avance
         if role in {"rh", "hr"}:
             return self.avance_repository.set_feedback_rh(avance, feedback_id=feedback_id)
 
         raise ValueError(f"Unsupported role: {user_role}")
-    def craete_avance(self, data  ) :
-        avance = Avance(
-            motif=data["motif"],
-            montante=data["montante"],
-            duree_de_remboursement=data["duree_de_remboursement"],
-        )
-        avance_saved = self.avance_repository.create_avance(avance)
-        return avance 
+
+
+
+    def create_avance(self, data):
+        try:
+            avance = Avance(
+                motif=data["motif"],
+                montante=data["montante"],
+                duree_de_remboursement=data["duree_de_remboursement"],
+                user_id=data["user_id"],
+            )
+            return self.avance_repository.create_avance(avance)
+        except Exception as exc:
+            raise AvanceOperationException("Failed to create avance") from exc
+
+    def get_avance(self, *, avance_id):
+        avance = self.avance_repository.get_by_id(avance_id=avance_id)
+        if avance is None:
+            raise AvanceNotFoundException("Avance not found")
+        return avance
+
+    def update_avance(self, avance: Avance, data):
+        try:
+            for field in ["motif", "montante", "duree_de_remboursement"]:
+                if field in data:
+                    setattr(avance, field, data[field])
+            avance.save()
+            return avance
+        except Exception as exc:
+            raise AvanceOperationException("Failed to update avance") from exc

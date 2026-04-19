@@ -4,7 +4,12 @@ import uuid
 
 import pika
 
-from services.avance_service import AvanceService
+import django
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "avance_service.settings")
+django.setup()
+
+from app.services.avance_service import AvanceService
 
 
 class FeedbackCreatedConsumer:
