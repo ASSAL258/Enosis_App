@@ -24,4 +24,4 @@ class AvanceService:
             duree_de_remboursement=data["duree_de_remboursement"],
         )
         avance_saved = self.avance_repository.create_avance(avance)
-        return avance 
+        return avance

@@ -1,3 +1,3 @@
-from .avance import Attestation
+from app.models.attestaion import Attestation
 
 __all__ = ["Attestation"]

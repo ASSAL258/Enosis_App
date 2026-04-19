@@ -1,3 +1,3 @@
-from .avance_exceptions import AvanceOperationException, AvanceServiceException
+from app.avance_exceptions import AttestaionOperationException, AttestaionServiceException
 
-__all__ = ["AvanceServiceException", "AvanceOperationException"]
+__all__ = ["AttestationServiceException", "AttestationOperationException"]
