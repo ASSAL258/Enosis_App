@@ -3,6 +3,11 @@ import uuid
 
 from django.db import models
 
+class Status(models.TextChoices):
+    TERMINE = "termine", "Terminé"
+    EN_COURS = "en_cours", "En cours"
+    AFFECTEE = "affectee", "Affectée"
+    PAS_AFFECTEE = "pas_affectee", "Pas affectée"
 
 class Course(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -11,6 +16,7 @@ class Course(models.Model):
     description = models.TextField(blank=True, null=True)
     attachment_id = models.UUIDField(blank=True, null=True)
     user_id = models.UUIDField(db_index=True)
+    status = models.Choices(Statu)
     delivered_time_id = models.UUIDField(blank=True, null=True, db_index=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     destination = models.CharField(max_length=100, blank=True, null=True)

@@ -143,6 +143,8 @@ services:
       DEPARTEMENT_SERVICE_URL: http://departement-service:5005
       COURSE_SERVICE_URL: http://course-service:5006
       COURIER_TIME_SERVICE_URL: http://courier-time-service:5007
+      CONGE_SERVICE_URL: http://conge-service:5008
+      SOLDES_SERVICE_URL: http://soldes-service:5009
     depends_on:
       config-service-db:
         condition: service_healthy
@@ -319,6 +321,42 @@ services:
       retries: 5
     restart: unless-stopped
 
+  conge-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_conge_service_db
+    environment:
+      POSTGRES_DB: conge_service_db
+      POSTGRES_USER: conge_service
+      POSTGRES_PASSWORD: conge_service
+    volumes:
+      - conge-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5441:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conge_service -d conge_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  soldes-service-db:
+    image: postgres:16-alpine
+    container_name: enosis_soldes_service_db
+    environment:
+      POSTGRES_DB: soldes_service_db
+      POSTGRES_USER: soldes_service
+      POSTGRES_PASSWORD: soldes_service
+    volumes:
+      - soldes-service-db-data:/var/lib/postgresql/data
+    ports:
+      - "5442:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soldes_service -d soldes_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   departement-service:
     build:
       context: ./services/departement-service
@@ -415,6 +453,109 @@ services:
       - "5007:5007"
     restart: unless-stopped
 
+  conge-service:
+    build:
+      context: ./services/conge-service
+    container_name: enosis_conge_service
+    environment:
+      POSTGRES_DB: conge_service_db
+      POSTGRES_USER: conge_service
+      POSTGRES_PASSWORD: conge_service
+      POSTGRES_HOST: conge-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      FEEDBACK_CREATED_QUEUE: feedback.created
+      SOLDE_CREATED_QUEUE: solde.created
+    depends_on:
+      conge-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      default:
+        aliases:
+          - conge-service
+    ports:
+      - "5008:5008"
+    restart: unless-stopped
+
+  conge-feedback-consumer:
+    build:
+      context: ./services/conge-service
+    container_name: enosis_conge_feedback_consumer
+    command: sh -c "python -m app.services.feedback_created_consumer"
+    environment:
+      POSTGRES_DB: conge_service_db
+      POSTGRES_USER: conge_service
+      POSTGRES_PASSWORD: conge_service
+      POSTGRES_HOST: conge-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      FEEDBACK_CREATED_QUEUE: feedback.created
+    depends_on:
+      conge-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+
+  conge-solde-consumer:
+    build:
+      context: ./services/conge-service
+    container_name: enosis_conge_solde_consumer
+    command: sh -c "python -m app.services.solde_created_consumer"
+    environment:
+      POSTGRES_DB: conge_service_db
+      POSTGRES_USER: conge_service
+      POSTGRES_PASSWORD: conge_service
+      POSTGRES_HOST: conge-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      SOLDE_CREATED_QUEUE: solde.created
+    depends_on:
+      conge-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    restart: unless-stopped
+
+  soldes-service:
+    build:
+      context: ./services/soldes-service
+    container_name: enosis_soldes_service
+    environment:
+      POSTGRES_DB: soldes_service_db
+      POSTGRES_USER: soldes_service
+      POSTGRES_PASSWORD: soldes_service
+      POSTGRES_HOST: soldes-service-db
+      POSTGRES_PORT: 5432
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASS: guest
+      SOLDE_CREATED_QUEUE: solde.created
+    depends_on:
+      soldes-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    networks:
+      default:
+        aliases:
+          - soldes-service
+    ports:
+      - "5009:5009"
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: .
@@ -433,6 +574,8 @@ services:
       - departement-service
       - course-service
       - courier-time-service
+      - conge-service
+      - soldes-service
     restart: unless-stopped
 
   rabbitmq:
@@ -456,4 +599,6 @@ volumes:
   departement-service-db-data:
   course-service-db-data:
   courier-time-service-db-data:
+  conge-service-db-data:
+  soldes-service-db-data:
 

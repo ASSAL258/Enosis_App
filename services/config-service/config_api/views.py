@@ -55,6 +55,12 @@ class ConfigViewSet(ViewSet):
                                 "COURIER_TIME_SERVICE_URL", "http://courier-time-service:5007"
                             )
                         },
+                        "conge-service": {
+                            "base_url": os.getenv("CONGE_SERVICE_URL", "http://conge-service:5008")
+                        },
+                        "soldes-service": {
+                            "base_url": os.getenv("SOLDES_SERVICE_URL", "http://soldes-service:5009")
+                        },
                     }
                 }
             )

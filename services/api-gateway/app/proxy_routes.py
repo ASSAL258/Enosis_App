@@ -9,4 +9,6 @@ SERVICE_ROUTES = {
     "/api/departements": "http://departement-service:5005/departements/",
     "/api/courses": "http://course-service:5006/courses/",
     "/api/delivered-times": "http://courier-time-service:5007/delivered-times/",
+    "/api/conges": "http://conge-service:5008/conges/",
+    "/api/soldes": "http://soldes-service:5009/soldes/",
 }
