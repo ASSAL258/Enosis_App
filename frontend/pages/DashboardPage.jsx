@@ -15,6 +15,7 @@ import RibPage from './RibPage.jsx'
 export default function DashboardPage({ user, onLogout }) {
   const defaultView = user.role === 'manager' ? 'conge' : 'avance'
   const [view, setView] = useState(defaultView)
+  const [notifications, setNotifications] = useState(getMockNotifications(user.role))
   const userInitials = `${user.first?.[0] || ''}${user.last?.[0] || ''}`.toUpperCase() || '?'
   const userName = `${user.first} ${user.last}`
   const roleLabel = user.role === 'rh'
@@ -23,7 +24,10 @@ export default function DashboardPage({ user, onLogout }) {
       ? 'Manager'
       : 'Employe'
   const accentUser = user.role === 'rh' || user.role === 'manager'
-  const notifications = getMockNotifications(user.role)
+
+  const handleDeleteNotification = (notificationId) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
+  }
 
   const sections = useMemo(() => {
     const processItems = [
@@ -76,6 +80,7 @@ export default function DashboardPage({ user, onLogout }) {
         <Navbar
           notifications={notifications}
           onNavigate={setView}
+          onDeleteNotification={handleDeleteNotification}
           brand={(
             <>
               <img src="/image_enosisapp.png" alt="enosisapp Group Logo" />

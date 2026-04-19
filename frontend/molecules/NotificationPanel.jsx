@@ -13,7 +13,7 @@ function formatTime(isoString) {
   return date.toLocaleDateString('fr-FR')
 }
 
-export default function NotificationPanel({ notifications = [], onClose, onNavigate }) {
+export default function NotificationPanel({ notifications = [], onClose, onNavigate, onDelete }) {
   const unreadCount = notifications.filter((n) => !n.read).length
   const sortedNotifications = [...notifications].sort(
     (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
@@ -22,6 +22,9 @@ export default function NotificationPanel({ notifications = [], onClose, onNavig
   const handleNotificationClick = (notification) => {
     if (notification.action && onNavigate) {
       onNavigate(notification.action)
+    }
+    if (onDelete) {
+      onDelete(notification.id)
     }
     onClose()
   }

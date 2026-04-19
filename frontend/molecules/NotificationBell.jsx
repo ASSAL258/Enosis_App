@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import NotificationPanel from './NotificationPanel.jsx'
 
-export default function NotificationBell({ notifications = [], onNavigate }) {
+export default function NotificationBell({ notifications = [], onNavigate, onDelete }) {
   const [isOpen, setIsOpen] = useState(false)
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -24,6 +24,7 @@ export default function NotificationBell({ notifications = [], onNavigate }) {
           notifications={notifications}
           onClose={() => setIsOpen(false)}
           onNavigate={onNavigate}
+          onDelete={onDelete}
         />
       )}
     </div>
