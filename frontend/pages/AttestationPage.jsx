@@ -230,7 +230,7 @@ export default function AttestationPage({ user, isValidationView = false }) {
 
           <FormRow>
             <FormGroup label="Matricule" required>
-              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
+              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} />
             </FormGroup>
             <FormGroup label="Societe" required>
               <Select value={form.societe} onChange={(event) => setForm((current) => ({ ...current, societe: event.target.value }))}>

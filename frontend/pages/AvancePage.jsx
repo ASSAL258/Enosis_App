@@ -267,7 +267,7 @@ export default function AvancePage({ user, isValidationView = false }) {
 
           <FormRow>
             <FormGroup label="Matricule" required>
-              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} placeholder="Saisissez le matricule" />
+              <Input value={form.matricule} readOnly={selectedUser === 'pour_moi'} onChange={(event) => selectedUser === 'pour_autre' && setForm((current) => ({ ...current, matricule: event.target.value }))} />
             </FormGroup>
             <FormGroup label="Montant demande (DH)" required>
               <Input type="number" min="0" value={form.montant} onChange={(event) => setForm((current) => ({ ...current, montant: event.target.value }))} />
