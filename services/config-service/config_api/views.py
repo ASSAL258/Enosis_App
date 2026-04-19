@@ -25,6 +25,46 @@ class ConfigViewSet(ViewSet):
                             "path": "/api/config/",
                             "upstream": "config-service.service.consul:5000",
                         },
+                        {
+                            "path": "/api/users/",
+                            "upstream": "user-service.service.consul:5002",
+                        },
+                        {
+                            "path": "/api/auth/",
+                            "upstream": "auth-service.service.consul:5003",
+                        },
+                        {
+                            "path": "/api/feedback-users/",
+                            "upstream": "feedback-user.service.consul:5001",
+                        },
+                        {
+                            "path": "/api/avances/",
+                            "upstream": "avance-service.service.consul:5004",
+                        },
+                        {
+                            "path": "/api/departements/",
+                            "upstream": "departement-service.service.consul:5005",
+                        },
+                        {
+                            "path": "/api/courses/",
+                            "upstream": "course-service.service.consul:5006",
+                        },
+                        {
+                            "path": "/api/delivered-times/",
+                            "upstream": "courier-time-service.service.consul:5007",
+                        },
+                        {
+                            "path": "/api/conges/",
+                            "upstream": "conge-service.service.consul:5008",
+                        },
+                        {
+                            "path": "/api/soldes/",
+                            "upstream": "soldes-service.service.consul:5009",
+                        },
+                        {
+                            "path": "/api/prets/",
+                            "upstream": "pret-service.service.consul:5010",
+                        },
                     ],
                 }
             )
@@ -36,11 +76,29 @@ class ConfigViewSet(ViewSet):
             return Response(
                 {
                     "services": {
+                        "config-service": {
+                            "base_url": os.getenv("CONFIG_SERVICE_URL", "http://config-service:5000")
+                        },
+                        "api-gateway": {
+                            "base_url": os.getenv("API_GATEWAY_URL", "http://api-gateway")
+                        },
+                        "backend": {
+                            "base_url": os.getenv("BACKEND_SERVICE_URL", "http://web:8000")
+                        },
+                        "discovery-service": {
+                            "base_url": os.getenv("DISCOVERY_SERVICE_URL", "http://discovery-service:8500")
+                        },
                         "user-service": {
                             "base_url": os.getenv("USER_SERVICE_URL", "http://user-service:5002")
                         },
                         "auth-service": {
                             "base_url": os.getenv("AUTH_SERVICE_URL", "http://auth-service:5003")
+                        },
+                        "feedback-user": {
+                            "base_url": os.getenv("FEEDBACK_USER_SERVICE_URL", "http://feedback-user:5001")
+                        },
+                        "avance-service": {
+                            "base_url": os.getenv("AVANCE_SERVICE_URL", "http://avance-service:5004")
                         },
                         "departement-service": {
                             "base_url": os.getenv(

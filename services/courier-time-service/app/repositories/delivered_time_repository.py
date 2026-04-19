@@ -8,3 +8,8 @@ class DeliveredTimeRepository:
     def create_delivered_time(self, delivered_time):
         delivered_time.save()
         return delivered_time
+
+    def set_image_id(self, delivered_time, image_id):
+        delivered_time.image_id = image_id
+        delivered_time.save(update_fields=["image_id"])
+        return delivered_time

@@ -20,6 +20,7 @@ class DeliveredTimeService:
             delivered_time = DeliveredTime(
                 course_id=data["course_id"],
                 courier_id=data["courier_id"],
+                image_id=data.get("image_id"),
                 start_time=data["start_time"],
                 end_time=data["end_time"],
             )

@@ -27,6 +27,7 @@ class CongeService:
                 start_date=data["start_date"],
                 end_date=data["end_date"],
                 motif=data["motif"],
+                attachment_url=data.get("attachment_url"),
             )
             return self.conge_repository.create_conge(conge)
         except Exception as exc:

@@ -10,6 +10,7 @@ class DeliveredTimeSerializer(serializers.ModelSerializer):
             "id",
             "course_id",
             "courier_id",
+            "image_id",
             "start_time",
             "end_time",
             "created_at",
@@ -25,3 +26,9 @@ class DeliveredTimeCreateSerializer(serializers.ModelSerializer):
             "start_time",
             "end_time",
         ]
+
+
+class DeliveredTimeImageUploadSerializer(serializers.Serializer):
+    file_name = serializers.CharField(max_length=255)
+    content_type = serializers.CharField(max_length=100)
+    content_base64 = serializers.CharField()

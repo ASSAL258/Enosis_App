@@ -1,3 +1,13 @@
-from .conge_serializer import CongeCreateSerializer, CongeSerializer, CongeUpdateSerializer
+from .conge_serializer import (
+	CongeAttachmentUploadSerializer,
+	CongeCreateSerializer,
+	CongeSerializer,
+	CongeUpdateSerializer,
+)
 
-__all__ = ["CongeSerializer", "CongeCreateSerializer", "CongeUpdateSerializer"]
+__all__ = [
+	"CongeSerializer",
+	"CongeCreateSerializer",
+	"CongeUpdateSerializer",
+	"CongeAttachmentUploadSerializer",
+]

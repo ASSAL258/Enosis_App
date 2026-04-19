@@ -16,7 +16,7 @@ class CongeRepository:
         return conge
 
     def update_conge(self, conge, data):
-        for field in ["type_dabsense", "start_date", "end_date", "motif", "user_id"]:
+        for field in ["type_dabsense", "start_date", "end_date", "motif", "user_id", "attachment_url"]:
             if field in data:
                 setattr(conge, field, data[field])
         conge.save()
@@ -38,4 +38,9 @@ class CongeRepository:
     def set_solde_id(self, conge, solde_id):
         conge.solde_id = solde_id
         conge.save(update_fields=["solde_id", "updated_at"])
+        return conge
+
+    def set_attachment_url(self, conge, attachment_url):
+        conge.attachment_url = attachment_url
+        conge.save(update_fields=["attachment_url", "updated_at"])
         return conge

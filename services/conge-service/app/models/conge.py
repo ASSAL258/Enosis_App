@@ -15,6 +15,7 @@ class Conge(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     motif = models.CharField(max_length=255)
+    attachment_url = models.UUIDField(null=True, blank=True, db_index=True)
     feedback_rh_id = models.UUIDField(null=True, blank=True, db_index=True)
     feedback_manager_id = models.UUIDField(null=True, blank=True, db_index=True)
     solde_id = models.UUIDField(null=True, blank=True, db_index=True)

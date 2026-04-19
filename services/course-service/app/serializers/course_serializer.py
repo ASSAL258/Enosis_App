@@ -12,7 +12,9 @@ class CourseSerializer(serializers.ModelSerializer):
             "code",
             "description",
             "attachment_id",
+            "attachment_url",
             "user_id",
+            "status",
             "delivered_time_id",
             "city",
             "destination",
@@ -30,7 +32,9 @@ class CourseCreateSerializer(serializers.ModelSerializer):
             "code",
             "description",
             "attachment_id",
+            "attachment_url",
             "user_id",
+            "status",
             "city",
             "destination",
             "courier_id",
@@ -45,8 +49,16 @@ class CourseUpdateSerializer(serializers.ModelSerializer):
             "code",
             "description",
             "attachment_id",
+            "attachment_url",
             "user_id",
+            "status",
             "city",
             "destination",
             "courier_id",
         ]
+
+
+class CourseAttachmentUploadSerializer(serializers.Serializer):
+    file_name = serializers.CharField(max_length=255)
+    content_type = serializers.CharField(max_length=100)
+    content_base64 = serializers.CharField()

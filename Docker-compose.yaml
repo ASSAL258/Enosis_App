@@ -140,12 +140,18 @@ services:
       POSTGRES_PORT: 5432
       USER_SERVICE_URL: http://user-service:5002
       AUTH_SERVICE_URL: http://auth-service:5003
+      FEEDBACK_USER_SERVICE_URL: http://feedback-user:5001
+      AVANCE_SERVICE_URL: http://avance-service:5004
       DEPARTEMENT_SERVICE_URL: http://departement-service:5005
       COURSE_SERVICE_URL: http://course-service:5006
       COURIER_TIME_SERVICE_URL: http://courier-time-service:5007
       CONGE_SERVICE_URL: http://conge-service:5008
       SOLDES_SERVICE_URL: http://soldes-service:5009
       PRET_SERVICE_URL: http://pret-service:5010
+      CONFIG_SERVICE_URL: http://config-service:5000
+      API_GATEWAY_URL: http://api-gateway
+      BACKEND_SERVICE_URL: http://web:8000
+      DISCOVERY_SERVICE_URL: http://discovery-service:8500
     depends_on:
       config-service-db:
         condition: service_healthy
@@ -408,10 +414,14 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASS: guest
       DELIVERED_TIME_CREATED_QUEUE: delivered_time.created
+      MONGO_URI: mongodb://attachments-mongo:27017
+      MONGO_DB_NAME: course_attachments_db
     depends_on:
       course-service-db:
         condition: service_healthy
       rabbitmq:
+        condition: service_started
+      attachments-mongo:
         condition: service_started
     networks:
       default:
@@ -459,10 +469,14 @@ services:
       RABBITMQ_USER: guest
       RABBITMQ_PASS: guest
       DELIVERED_TIME_CREATED_QUEUE: delivered_time.created
+      MONGO_URI: mongodb://attachments-mongo:27017
+      MONGO_DB_NAME: courier_time_images_db
     depends_on:
       courier-time-service-db:
         condition: service_healthy
       rabbitmq:
+        condition: service_started
+      attachments-mongo:
         condition: service_started
     networks:
       default:
@@ -488,10 +502,14 @@ services:
       RABBITMQ_PASS: guest
       FEEDBACK_CREATED_QUEUE: feedback.created
       SOLDE_CREATED_QUEUE: solde.created
+      MONGO_URI: mongodb://attachments-mongo:27017
+      MONGO_DB_NAME: conge_attachments_db
     depends_on:
       conge-service-db:
         condition: service_healthy
       rabbitmq:
+        condition: service_started
+      attachments-mongo:
         condition: service_started
     networks:
       default:
@@ -660,6 +678,15 @@ services:
       - "15672:15672"
     restart: unless-stopped
 
+  attachments-mongo:
+    image: mongo:7
+    container_name: enosis_attachments_mongo
+    volumes:
+      - attachments-mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+
 volumes:
   web-db-data:
   config-service-db-data:
@@ -673,4 +700,5 @@ volumes:
   conge-service-db-data:
   soldes-service-db-data:
   pret-service-db-data:
+  attachments-mongo-data:
 

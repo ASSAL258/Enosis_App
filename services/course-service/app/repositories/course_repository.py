@@ -21,6 +21,8 @@ class CourseRepository:
             "code",
             "description",
             "attachment_id",
+            "attachment_url",
+            "status",
             "city",
             "destination",
             "courier_id",
@@ -34,6 +36,11 @@ class CourseRepository:
     def set_delivered_time_id(self, course, delivered_time_id):
         course.delivered_time_id = delivered_time_id
         course.save(update_fields=["delivered_time_id", "updated_at"])
+        return course
+
+    def set_attachment_url(self, course, attachment_url):
+        course.attachment_url = attachment_url
+        course.save(update_fields=["attachment_url", "updated_at"])
         return course
 
     def delete_course(self, course):

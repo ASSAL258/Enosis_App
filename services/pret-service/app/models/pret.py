@@ -10,7 +10,7 @@ class PretStatus(models.TextChoices):
     REJECTED = "rejected", "Rejected"
 
 
-class Pret(models.Model):
+class Pret(models.Model):   
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user_id = models.UUIDField(db_index=True)
     motif = models.CharField(max_length=255)
