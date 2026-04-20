@@ -80,6 +80,18 @@ service {
 }
 
 service {
+  name = "attestation-service"
+  id = "attestation-service"
+  address = "attestation-service"
+  port = 5011
+  check {
+    http = "http://attestation-service:5011/api/attestations/health/"
+    interval = "10s"
+    timeout = "3s"
+  }
+}
+
+service {
   name = "departement-service"
   id = "departement-service"
   address = "departement-service"
