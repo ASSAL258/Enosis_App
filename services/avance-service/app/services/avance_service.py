@@ -2,6 +2,7 @@ from app.models import Avance
 from app.exceptions import AvanceNotFoundException, AvanceOperationException
 from app.repositories import AvanceRepository
 
+
 class AvanceService:
     def __init__(self):
         self.avance_repository = AvanceRepository()
@@ -11,15 +12,13 @@ class AvanceService:
         if avance is None:
             return None
 
-        role = user_role.strip().lower()
+        role = (user_role or "").strip().lower()
         if role == "manager":
             return avance
         if role in {"rh", "hr"}:
             return self.avance_repository.set_feedback_rh(avance, feedback_id=feedback_id)
 
         raise ValueError(f"Unsupported role: {user_role}")
-
-
 
     def create_avance(self, data):
         try:

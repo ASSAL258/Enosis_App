@@ -7,5 +7,5 @@ class RoleRepository:
         return list(Role.objects.all().order_by("name"))
 
     @staticmethod
-    def create_role(*, name: str, code: str, description: str = "") -> Role:
-        return Role.objects.create(name=name, code=code, description=description)
+    def create_role(*, name: str, description: str = "") -> Role:
+        return Role.objects.create(name=name, description=description)

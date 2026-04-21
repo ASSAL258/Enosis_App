@@ -32,3 +32,29 @@ class DeliveredTimeService:
             return delivered_time
         except Exception as exc:
             raise CourierTimeOperationException("Failed to create delivered time") from exc
+
+    def start_delivery(self, delivered_time_id, courier_id, start_time):
+        delivered_time = self.get_delivered_time_by_id(delivered_time_id)
+
+        try:
+            if str(delivered_time.courier_id) != str(courier_id):
+                raise CourierTimeOperationException("Delivered time belongs to another courier")
+
+            return self.delivered_time_repository.set_start_time(delivered_time, start_time)
+        except CourierTimeOperationException:
+            raise
+        except Exception as exc:
+            raise CourierTimeOperationException("Failed to set start time") from exc
+
+    def complete_delivery(self, delivered_time_id, courier_id, end_time):
+        delivered_time = self.get_delivered_time_by_id(delivered_time_id)
+
+        try:
+            if str(delivered_time.courier_id) != str(courier_id):
+                raise CourierTimeOperationException("Delivered time belongs to another courier")
+
+            return self.delivered_time_repository.set_end_time(delivered_time, end_time)
+        except CourierTimeOperationException:
+            raise
+        except Exception as exc:
+            raise CourierTimeOperationException("Failed to set end time") from exc

@@ -669,6 +669,19 @@ services:
       - attestation-service
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_PROXY_TARGET: http://api-gateway:80
+    container_name: enosis_frontend
+    depends_on:
+      - api-gateway
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: enosis_rabbitmq
@@ -735,7 +748,7 @@ services:
     build:
       context: ./services/attestation-service
     container_name: enosis_attestation_feedback_consumer
-    command: python feedback_consumer_runner.py
+    command: sh -c "python -m app.services.feedback_created_consumer"
     environment:
       DJANGO_SETTINGS_MODULE: attestation_service.settings
       PYTHONPATH: /app
@@ -756,6 +769,50 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: enosis_prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - ./infra/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - blackbox-exporter
+    restart: unless-stopped
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: enosis_blackbox_exporter
+    command:
+      - --config.file=/etc/blackbox_exporter/blackbox.yml
+    volumes:
+      - ./infra/monitoring/blackbox/blackbox.yml:/etc/blackbox_exporter/blackbox.yml:ro
+    ports:
+      - "9115:9115"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.5
+    container_name: enosis_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
 volumes:
   web-db-data:
   config-service-db-data:
@@ -771,4 +828,6 @@ volumes:
   pret-service-db-data:
   attachments-mongo-data:
   attestation-service-db-data:
+  prometheus-data:
+  grafana-data:
 

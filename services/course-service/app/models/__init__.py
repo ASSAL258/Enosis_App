@@ -1,3 +1,3 @@
-from .course import Course
+from .course import Course, CourseType, Status
 
-__all__ = ["Course"]
+__all__ = ["Course", "CourseType", "Status"]

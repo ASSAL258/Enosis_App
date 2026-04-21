@@ -7,8 +7,10 @@ from rest_framework.viewsets import ViewSet
 
 from app.exceptions import CourierTimeOperationException, DeliveredTimeNotFoundException
 from app.serializers import (
+    DeliveredTimeCompleteSerializer,
     DeliveredTimeCreateSerializer,
     DeliveredTimeImageUploadSerializer,
+    DeliveredTimeStartSerializer,
     DeliveredTimeSerializer,
 )
 from app.services.delivered_time_image_service import DeliveredTimeImageService
@@ -36,6 +38,38 @@ class DeliveredTimeViewSet(ViewSet):
             serializer.is_valid(raise_exception=True)
             delivered_time = self.delivered_time_service.create_delivered_time(serializer.validated_data)
             return Response(DeliveredTimeSerializer(delivered_time).data, status=status.HTTP_201_CREATED)
+        except CourierTimeOperationException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["post"], url_path="start")
+    def start(self, request, pk=None):
+        try:
+            serializer = DeliveredTimeStartSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            delivered_time = self.delivered_time_service.start_delivery(
+                delivered_time_id=pk,
+                courier_id=serializer.validated_data["courier_id"],
+                start_time=serializer.validated_data["start_time"],
+            )
+            return Response(DeliveredTimeSerializer(delivered_time).data)
+        except DeliveredTimeNotFoundException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
+        except CourierTimeOperationException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["post"], url_path="complete")
+    def complete(self, request, pk=None):
+        try:
+            serializer = DeliveredTimeCompleteSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            delivered_time = self.delivered_time_service.complete_delivery(
+                delivered_time_id=pk,
+                courier_id=serializer.validated_data["courier_id"],
+                end_time=serializer.validated_data["end_time"],
+            )
+            return Response(DeliveredTimeSerializer(delivered_time).data)
+        except DeliveredTimeNotFoundException as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_404_NOT_FOUND)
         except CourierTimeOperationException as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 

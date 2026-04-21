@@ -1,0 +1,8 @@
+modules:
+  http_any_status:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: [200, 201, 202, 204, 301, 302, 401, 403, 404]
+      preferred_ip_protocol: ip4

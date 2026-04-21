@@ -7,11 +7,15 @@ import pika
 
 # Setup Django FIRST before any model imports
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "attestation_service.settings")
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+# Ensure /app is in the path (the working directory in Docker)
+if "/app" not in sys.path:
+    sys.path.insert(0, "/app")
+
 django.setup()
 
-# Import service AFTER django.setup()
-from app.services.attestation_service import AttestationService
+# DO NOT import AttestationService at module level!
+# It will be imported only when needed, after django.setup()
 
 
 class FeedbackCreatedConsumer:
@@ -23,6 +27,8 @@ class FeedbackCreatedConsumer:
         self.username = os.getenv("RABBITMQ_USER", "guest")
         self.password = os.getenv("RABBITMQ_PASS", "guest")
         self.queue = os.getenv("FEEDBACK_CREATED_QUEUE", "feedback.created")
+        # Import service only after django.setup() has been called above
+        from app.services.attestation_service import AttestationService  # noqa: E402
         self.attestation_service = AttestationService()
 
     def start(self):
@@ -86,5 +92,3 @@ if __name__ == "__main__":
     consumer = FeedbackCreatedConsumer()
     consumer.start()
 
-
-    FeedbackCreatedConsumer().start()

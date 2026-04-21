@@ -10,6 +10,5 @@ class RoleService:
     def create_role(validated_data: dict):
         return RoleRepository.create_role(
             name=validated_data["name"],
-            code=validated_data["code"],
             description=validated_data.get("description", ""),
         )

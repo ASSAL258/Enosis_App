@@ -9,11 +9,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from app.exceptions import AvanceNotFoundException, AvanceOperationException
+from app.models import Avance
 from app.serializers.avance_serializer import CreateAvanceSerializer
 from app.services.avance_service import AvanceService
 
 
 class AvanceViewSet(viewsets.ModelViewSet):
+    queryset = Avance.objects.all().order_by("-created_at")
+
     error_response_schema = openapi.Schema(
         type=openapi.TYPE_OBJECT,
         properties={
@@ -37,6 +40,10 @@ class AvanceViewSet(viewsets.ModelViewSet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.avance_service = AvanceService()
+
+    def list(self, request, *args, **kwargs):
+        avances = self.get_queryset()
+        return Response([self._serialize_avance(avance) for avance in avances], status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         operation_summary="Create avance",

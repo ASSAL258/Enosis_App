@@ -14,4 +14,4 @@ class Role(models.Model):
         db_table = "roles"
 
     def __str__(self) -> str:
-        return f"{self.code} - {self.name}"
+        return self.name

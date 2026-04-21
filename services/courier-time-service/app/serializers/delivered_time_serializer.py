@@ -32,3 +32,13 @@ class DeliveredTimeImageUploadSerializer(serializers.Serializer):
     file_name = serializers.CharField(max_length=255)
     content_type = serializers.CharField(max_length=100)
     content_base64 = serializers.CharField()
+
+
+class DeliveredTimeStartSerializer(serializers.Serializer):
+    courier_id = serializers.UUIDField(required=True)
+    start_time = serializers.DateTimeField(required=True)
+
+
+class DeliveredTimeCompleteSerializer(serializers.Serializer):
+    courier_id = serializers.UUIDField(required=True)
+    end_time = serializers.DateTimeField(required=True)

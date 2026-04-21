@@ -1,4 +1,6 @@
 from .course_serializer import (
+	CourseAssignCourierSerializer,
+	CourseAttachDeliveredTimeSerializer,
 	CourseAttachmentUploadSerializer,
 	CourseCreateSerializer,
 	CourseSerializer,
@@ -9,5 +11,7 @@ __all__ = [
 	"CourseSerializer",
 	"CourseCreateSerializer",
 	"CourseUpdateSerializer",
+	"CourseAssignCourierSerializer",
+	"CourseAttachDeliveredTimeSerializer",
 	"CourseAttachmentUploadSerializer",
 ]

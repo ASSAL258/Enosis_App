@@ -10,6 +10,8 @@ SERVICE_ROUTES = {
     "/api/auth/redoc": "http://auth-service:5003/redoc/",
     "/api/feedback-users": "http://feedback-user:5001/feedback-users/",
     "/api/avances": "http://avance-service:5004/avances/",
+    "/api/demandes": "http://avance-service:5004/avances/",
+    "/api/attestations": "http://attestation-service:5011/attestations/",
     "/api/departements": "http://departement-service:5005/departements/",
     "/api/courses": "http://course-service:5006/courses/",
     "/api/delivered-times": "http://courier-time-service:5007/delivered-times/",

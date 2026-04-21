@@ -65,6 +65,10 @@ class ConfigViewSet(ViewSet):
                             "path": "/api/prets/",
                             "upstream": "pret-service.service.consul:5010",
                         },
+                        {
+                            "path": "/api/attestations/",
+                            "upstream": "attestation-service.service.consul:5011",
+                        },
                     ],
                 }
             )
@@ -121,6 +125,12 @@ class ConfigViewSet(ViewSet):
                         },
                         "pret-service": {
                             "base_url": os.getenv("PRET_SERVICE_URL", "http://pret-service:5010")
+                        },
+                        "attestation-service": {
+                            "base_url": os.getenv("ATTESTATION_SERVICE_URL", "http://attestation-service:5011")
+                        },
+                        "frontend": {
+                            "base_url": os.getenv("FRONTEND_SERVICE_URL", "http://frontend")
                         },
                     }
                 }
